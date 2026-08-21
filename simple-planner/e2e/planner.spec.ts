@@ -63,6 +63,38 @@ test.describe("the planner", () => {
     await expect(page.getByText("water plants")).toHaveCount(0);
   });
 
+  test("edits a task title in place, and the new title survives a reload", async ({ page }) => {
+    await page.goto(REFERENCE_URL);
+    await addTaskTo(page, "Monday 29 June", "buy milk");
+
+    await page.getByRole("button", { name: "Edit “buy milk”" }).click();
+    const field = page.getByRole("textbox", { name: "Edit “buy milk”" });
+    await field.fill("buy oat milk");
+    await field.press("Enter");
+
+    await expect(page.getByText("buy oat milk")).toBeVisible();
+    await page.reload();
+    await expect(page.getByText("buy oat milk")).toBeVisible();
+    await expect(page.getByText("buy milk", { exact: true })).toHaveCount(0);
+  });
+
+  test("abandons an edit on Escape rather than saving it", async ({ page }) => {
+    await page.goto(REFERENCE_URL);
+    await addTaskTo(page, "Tuesday 30 June", "call the vet");
+
+    await page.getByRole("button", { name: "Edit “call the vet”" }).click();
+    const field = page.getByRole("textbox", { name: "Edit “call the vet”" });
+    await field.fill("something else entirely");
+    // Escape must win over the blur that follows it, which would otherwise
+    // commit the very text the user just abandoned.
+    await field.press("Escape");
+
+    await expect(page.getByText("call the vet")).toBeVisible();
+    await page.reload();
+    await expect(page.getByText("call the vet")).toBeVisible();
+    await expect(page.getByText("something else entirely")).toHaveCount(0);
+  });
+
   test("prints Independence Day on the 4th after navigating to July 2026", async ({ page }) => {
     await page.goto(`/?week=${REFERENCE_WEEK}&month=2026-06-01`);
     await page.getByRole("link", { name: /next month/i }).click();
