@@ -5,9 +5,17 @@ import { makeTask, stubNextBoundaries } from "./test-setup";
 
 stubNextBoundaries();
 
-function renderDay({ holidays = [] as string[], tasks = [] as ReturnType<typeof makeTask>[] } = {}) {
+function renderDay({
+  holidays = [] as string[],
+  tasks = [] as ReturnType<typeof makeTask>[],
+} = {}) {
   return render(
-    <DaySection date={new Date(2026, 6, 4)} dayKey="2026-07-04" tasks={tasks} holidays={holidays} />,
+    <DaySection
+      date={new Date(2026, 6, 4)}
+      dayKey="2026-07-04"
+      tasks={tasks}
+      holidays={holidays}
+    />,
   );
 }
 

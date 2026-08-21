@@ -146,8 +146,8 @@ export default function SpecimenPage() {
       <Section title="Slimes">
         <PixelFrame className="flex flex-col gap-4 p-4">
           <span className="text-body-sm text-ink-soft">
-            Twelve variants of one 16&#215;14 shape, at 1&#215; (picker) and
-            2&#215; (header). Never 1.5&#215;.
+            Twelve variants of one 16&#215;14 shape, at 1&#215; (picker) and 2&#215; (header). Never
+            1.5&#215;.
           </span>
           <div className="flex flex-wrap gap-4">
             {SLIME_IDS.map((id) => (
@@ -170,10 +170,9 @@ export default function SpecimenPage() {
       <Section title="Backdrop">
         <PixelFrame className="flex flex-col gap-4 p-4">
           <span className="text-body-sm text-ink-soft">
-            One 24&#215;9 cloud, mirrored and rescaled rather than redrawn. Its
-            body is <code>--color-cloud</code>, a half-step lighter than paper:
-            on the page it sits behind everything, so any real contrast would
-            read as a surface instead of as sky.
+            One 24&#215;9 cloud, mirrored and rescaled rather than redrawn. Its body is{" "}
+            <code>--color-cloud</code>, a half-step lighter than paper: on the page it sits behind
+            everything, so any real contrast would read as a surface instead of as sky.
           </span>
           <div className="flex flex-wrap items-end gap-8">
             <PixelCloud scale={1} />
@@ -186,9 +185,9 @@ export default function SpecimenPage() {
 
       <Section title="Focus">
         <p className="text-body-sm text-ink-soft">
-          Tab through everything above. The ring is square, 2px, offset 2px, and
-          present on every control — it is the only affordance a keyboard user
-          gets on a theme with no hover elevation.
+          Tab through everything above. The ring is square, 2px, offset 2px, and present on every
+          control — it is the only affordance a keyboard user gets on a theme with no hover
+          elevation.
         </p>
       </Section>
     </main>

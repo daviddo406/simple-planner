@@ -124,9 +124,7 @@ describe("monthGrid", () => {
   test("contains every day of the month exactly once and nothing else", () => {
     const grid = monthGrid(new Date(2026, 6, 15));
     const dates = grid.flat().filter((cell): cell is Date => cell !== null);
-    expect(dates.map((d) => d.getDate())).toEqual(
-      Array.from({ length: 31 }, (_, i) => i + 1),
-    );
+    expect(dates.map((d) => d.getDate())).toEqual(Array.from({ length: 31 }, (_, i) => i + 1));
     expect(dates.every((d) => d.getMonth() === 6)).toBe(true);
   });
 

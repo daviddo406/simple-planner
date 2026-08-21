@@ -15,9 +15,7 @@ import { dayKey } from "@/lib/calendar";
  */
 export function TodayMarker() {
   useEffect(() => {
-    const cell = document.querySelector<HTMLElement>(
-      `[data-day-key="${dayKey(new Date())}"]`,
-    );
+    const cell = document.querySelector<HTMLElement>(`[data-day-key="${dayKey(new Date())}"]`);
     if (!cell) return;
 
     cell.setAttribute("aria-current", "date");

@@ -11,7 +11,11 @@ const REFERENCE_URL = `/?week=${REFERENCE_WEEK}&month=${JULY}`;
 function thisMonday(page: Page): Promise<string> {
   return page.evaluate(() => {
     const now = new Date();
-    const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
+    const monday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() - ((now.getDay() + 6) % 7),
+    );
     const pad = (value: number, width: number) => String(value).padStart(width, "0");
     return `${pad(monday.getFullYear(), 4)}-${pad(monday.getMonth() + 1, 2)}-${pad(monday.getDate(), 2)}`;
   });
@@ -23,9 +27,7 @@ async function addTaskTo(page: Page, dayLabel: string, title: string) {
   await field.press("Enter");
   await expect(page.getByText(title)).toBeVisible();
   // Let the Server Action land before anything reloads out from under it.
-  await expect
-    .poll(() => page.getByText(title).count(), { timeout: 10_000 })
-    .toBeGreaterThan(0);
+  await expect.poll(() => page.getByText(title).count(), { timeout: 10_000 }).toBeGreaterThan(0);
 }
 
 test.describe("the planner", () => {
@@ -118,9 +120,9 @@ test.describe("the planner", () => {
 
   test("renders a deep-linked week directly", async ({ page }) => {
     await page.goto(`/?week=${REFERENCE_WEEK}`);
-    const labels = await page.getByRole("region").evaluateAll((sections) =>
-      sections.map((section) => section.getAttribute("aria-label")),
-    );
+    const labels = await page
+      .getByRole("region")
+      .evaluateAll((sections) => sections.map((section) => section.getAttribute("aria-label")));
     expect(labels[0]).toBe("Monday 29 June");
     expect(labels[6]).toBe("Sunday 5 July");
   });
@@ -151,9 +153,9 @@ test.describe("the planner", () => {
   test("normalizes a mid-week ?week= to the week that contains it", async ({ page }) => {
     // The param is user input and may name any day.
     await page.goto("/?week=2026-07-02");
-    const labels = await page.getByRole("region").evaluateAll((sections) =>
-      sections.map((section) => section.getAttribute("aria-label")),
-    );
+    const labels = await page
+      .getByRole("region")
+      .evaluateAll((sections) => sections.map((section) => section.getAttribute("aria-label")));
     expect(labels[0]).toBe("Monday 29 June");
   });
 
@@ -161,9 +163,7 @@ test.describe("the planner", () => {
     await page.goto(REFERENCE_URL);
     const accent = () =>
       page.evaluate(() =>
-        getComputedStyle(document.querySelector("main")!)
-          .getPropertyValue("--color-accent")
-          .trim(),
+        getComputedStyle(document.querySelector("main")!).getPropertyValue("--color-accent").trim(),
       );
 
     const before = await accent();
@@ -195,9 +195,11 @@ test.describe("the planner", () => {
       page.locator("aside").getByText(/^[A-Z]{3} \d{4}$/),
       monday.getByText("MON"),
     ]) {
-      await expect.poll(() => label.evaluate((node) => getComputedStyle(node).color), {
-        timeout: 10_000,
-      }).toBe(bubblegum);
+      await expect
+        .poll(() => label.evaluate((node) => getComputedStyle(node).color), {
+          timeout: 10_000,
+        })
+        .toBe(bubblegum);
     }
 
     // The date number is content, not a label, and stays ink.
@@ -347,7 +349,10 @@ test.describe("theme guards", () => {
     const page = await context.newPage();
     await page.goto(REFERENCE_URL);
 
-    const backdrop = page.locator("[aria-hidden='true']").filter({ has: page.locator("svg") }).first();
+    const backdrop = page
+      .locator("[aria-hidden='true']")
+      .filter({ has: page.locator("svg") })
+      .first();
     await expect(backdrop).toBeAttached();
 
     const overflows = await page.evaluate(
@@ -394,7 +399,6 @@ test.describe("theme guards", () => {
     await button.click();
     await page.waitForURL((url) => url.searchParams.get("month") === "2026-08-01");
   });
-
 });
 
 /**
@@ -408,7 +412,10 @@ test.describe("pixel snapshots", () => {
 
   for (const deviceScaleFactor of [1, 2]) {
     test(`looks unchanged at DPR ${deviceScaleFactor}`, async ({ browser }) => {
-      const context = await browser.newContext({ deviceScaleFactor, viewport: { width: 1280, height: 1024 } });
+      const context = await browser.newContext({
+        deviceScaleFactor,
+        viewport: { width: 1280, height: 1024 },
+      });
       const page = await context.newPage();
       // The deep-linked week fixes the content, so the shot is deterministic.
       await page.goto(REFERENCE_URL);

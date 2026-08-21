@@ -82,9 +82,7 @@ export function holidaysForYear(year: number): Holiday[] {
  */
 export function holidaysByDayKey(weekKey: string): Record<string, string[]> {
   const days = daysOfWeek(parseDayKey(weekKey));
-  const week: Record<string, string[]> = Object.fromEntries(
-    days.map((date) => [dayKey(date), []]),
-  );
+  const week: Record<string, string[]> = Object.fromEntries(days.map((date) => [dayKey(date), []]));
 
   // A week can straddle a year boundary, so both years' rulesets are consulted.
   const years = new Set(days.map((date) => date.getFullYear()));

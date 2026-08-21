@@ -35,7 +35,9 @@ describe("WeekPage", () => {
 
   test("renders them Monday through Sunday with the right dates", () => {
     renderWeek();
-    expect(screen.getAllByRole("region").map((section) => section.getAttribute("aria-label"))).toEqual([
+    expect(
+      screen.getAllByRole("region").map((section) => section.getAttribute("aria-label")),
+    ).toEqual([
       "Monday 29 June",
       "Tuesday 30 June",
       "Wednesday 1 July",
