@@ -6,6 +6,21 @@ import { DaySection } from "./DaySection";
 import { ThisWeekButton } from "./ThisWeekButton";
 
 /**
+ * Where each day sits on the two-page spread at `md` and up. Tailwind needs
+ * whole class names to see them, so the six positions are written out rather
+ * than computed from the index.
+ */
+const COLUMN_PLACEMENT = [
+  "md:col-start-1 md:row-start-1",
+  "md:col-start-1 md:row-start-2",
+  "md:col-start-1 md:row-start-3",
+  "md:col-start-2 md:row-start-1",
+  "md:col-start-2 md:row-start-2",
+  "md:col-start-2 md:row-start-3",
+  "md:col-span-2 md:col-start-1 md:row-start-4",
+];
+
+/**
  * Seven dated sections, Monday first, derived entirely from `weekKey` — the
  * one piece of state the whole app has, and it lives in the URL rather than in
  * React. The mini calendar derives from the same value, so the two cannot
@@ -37,11 +52,15 @@ export function WeekPage({
           <ThisWeekButton weekKey={weekKey} />
         </div>
       </header>
-      {/* Two facing columns, the way a paper planner opens: Mon/Tue, Wed/Thu,
-          Fri/Sat, then Sunday across the fold. One column below `md`, where a
-          half-width day is narrower than the task text it has to hold. */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:[&>section:last-child]:col-span-2">
-        {days.map((date) => {
+      {/* Two facing columns, the way a paper planner opens, each read top to
+          bottom rather than across: Mon/Tue/Wed down the left, Thu/Fri/Sat down
+          the right, then Sunday across the fold. The DOM stays in weekday
+          order — the placement is explicit so the columns fill downwards — and
+          below `md` the placement drops away and the days stack in that same
+          order, because a half-width day is narrower than the task text it has
+          to hold. */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {days.map((date, index) => {
           const key = toDayKey(date);
           return (
             <DaySection
@@ -50,6 +69,7 @@ export function WeekPage({
               dayKey={key}
               tasks={tasks[key] ?? []}
               holidays={holidays[key] ?? []}
+              className={COLUMN_PLACEMENT[index]}
             />
           );
         })}
