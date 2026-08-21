@@ -9,8 +9,10 @@ import {
   addTask,
   deleteTask,
   getSlime,
+  getTheme,
   renameTask,
   setSlime,
+  setTheme,
   tasksForWeek,
   toggleTask,
 } from "./queries";
@@ -129,7 +131,9 @@ describe("renameTask", () => {
     const task = await addTask("2026-07-01", "buy milk");
 
     await renameTask(task.id, "buy oat milk");
-    expect((await tasksForWeek(MONDAY))["2026-07-01"].map((t) => t.title)).toEqual(["buy oat milk"]);
+    expect((await tasksForWeek(MONDAY))["2026-07-01"].map((t) => t.title)).toEqual([
+      "buy oat milk",
+    ]);
   });
 
   test("trims the new title", async () => {
@@ -213,5 +217,39 @@ describe("the slime preference", () => {
     await setSlime("plum");
     await expect(setSlime("chartreuse")).rejects.toThrow();
     expect(await getSlime()).toBe("plum");
+  });
+});
+
+describe("the theme preference", () => {
+  test("follows the OS on a fresh database rather than picking a side", () => {
+    return expect(getTheme()).resolves.toBe("system");
+  });
+
+  test("returns the stored value after it is set", async () => {
+    await setTheme("dark");
+    expect(await getTheme()).toBe("dark");
+  });
+
+  test("can be set back to following the OS", async () => {
+    // The round trip that a two-state toggle cannot make: an explicit Light
+    // on a dark machine has to be undoable back to "no opinion".
+    await setTheme("light");
+    await setTheme("system");
+    expect(await getTheme()).toBe("system");
+  });
+
+  test("rejects a bogus choice and writes nothing", async () => {
+    await setTheme("dark");
+    await expect(setTheme("night")).rejects.toThrow();
+    expect(await getTheme()).toBe("dark");
+  });
+
+  test("shares the settings table with the slime without clobbering it", async () => {
+    // One key/value table holds both preferences; an upsert keyed on the wrong
+    // column would let the newer write take the older one's row.
+    await setSlime("moss");
+    await setTheme("dark");
+    expect(await getSlime()).toBe("moss");
+    expect(await getTheme()).toBe("dark");
   });
 });

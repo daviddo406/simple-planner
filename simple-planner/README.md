@@ -99,6 +99,13 @@ database credentials.
    the 4px grid, borders are 2px, type is unsmoothed bitmap type at integer multiples of its
    design size, and raster stays raster. The E2E suite asserts all four of the checkable ones
    from computed styles at DPR 1, 1.5, and 2.
+5. **The palette has two ramps and one switch.** Day and night both live in
+   `src/app/globals.css`; the night one is declared once as `--night-*` and remapped onto
+   `--color-*` by a `prefers-color-scheme` block and a `[data-theme]` block, so no component
+   knows a second palette exists. The stored choice is `system | light | dark` and is rendered
+   into `<html>` on the server, which is what keeps the first paint on the right ramp. The ramps
+   are unit-tested — contrast budgets and wiring, read out of the stylesheet — but not exercised
+   end to end.
 
 ## Deploying
 

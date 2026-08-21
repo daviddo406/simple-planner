@@ -1,6 +1,39 @@
 import { PixelCloud } from "@/components/ui/PixelCloud";
+import { PixelStar } from "@/components/ui/PixelStar";
 import { Slime } from "@/components/ui/Slime";
-import { SLIME_IDS } from "@/lib/slimes";
+import { SLIMES, SLIME_IDS } from "@/lib/slimes";
+
+/**
+ * The night sky: hand-placed, like the clouds, and for the same reason — an
+ * evenly-spaced scatter reads as a pattern rather than as stars. Positions are
+ * whole Tailwind units, which is 4px each, and they stay in the left and right
+ * margins where the week page is not.
+ *
+ * The colours are slime night tones, the same values the accent uses on night
+ * paper, so the sky is drawn from the palette the app already has rather than
+ * from a second set of decorative colours nobody measured.
+ */
+const STARS = [
+  { className: "left-12 top-8", color: SLIMES.lemon.night, scale: 2 },
+  { className: "left-32 top-32", color: SLIMES.sky.night, scale: 1 },
+  { className: "left-8 top-40", color: SLIMES.rose.night, scale: 1 },
+  { className: "left-24 top-72", color: SLIMES.cream.night, scale: 2 },
+  { className: "left-40 top-96", color: SLIMES.bubblegum.night, scale: 1 },
+  { className: "right-24 top-4", color: SLIMES.sky.night, scale: 1 },
+  { className: "right-12 top-28", color: SLIMES.lemon.night, scale: 2 },
+  { className: "right-40 top-48", color: SLIMES.teal.night, scale: 1 },
+  { className: "right-16 top-80", color: SLIMES.cream.night, scale: 1 },
+  { className: "right-32 top-96", color: SLIMES.amber.night, scale: 2 },
+  // Down the edges. These hug the viewport rather than sitting further in,
+  // because below the mini calendar the margins are all there is — the ones
+  // above can afford to be deeper, since the sidebar's opaque paper covers
+  // them on a narrow window and reveals them on a wide one.
+  { className: "left-8 top-128", color: SLIMES.teal.night, scale: 1 },
+  { className: "right-4 top-144", color: SLIMES.rose.night, scale: 2 },
+  { className: "left-16 top-176", color: SLIMES.lemon.night, scale: 1 },
+  { className: "right-12 top-208", color: SLIMES.sky.night, scale: 1 },
+  { className: "left-4 top-224", color: SLIMES.cream.night, scale: 2 },
+] as const;
 
 /**
  * The page's scenery: pixel clouds along the top, the whole colony of slimes
@@ -27,6 +60,20 @@ export function Backdrop() {
       aria-hidden
       className="pointer-events-none fixed inset-0 -z-10 hidden select-none overflow-hidden lg:block"
     >
+      {/* The sky, on night paper only. Always rendered, never conditional:
+          `.night-only` is switched in `globals.css` alongside the ramp, which
+          is the only place that knows whether it is night. */}
+      <div className="night-only">
+        {STARS.map((star) => (
+          <PixelStar
+            key={star.className}
+            color={star.color}
+            scale={star.scale}
+            className={`absolute ${star.className}`}
+          />
+        ))}
+      </div>
+
       {/* Hand-placed rather than evenly spaced: a row of clouds at one pitch
           reads as a border. All offsets are on the 4px grid, and all of them
           hug the left and right edges — the middle of the top band is where

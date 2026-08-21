@@ -1,6 +1,7 @@
 import { asc, eq, inArray, sql } from "drizzle-orm";
 import { dayKey as toDayKey, daysOfWeek, parseDayKey } from "@/lib/calendar";
 import { DEFAULT_SLIME_ID, type SlimeId, isSlimeId } from "@/lib/slimes";
+import { DEFAULT_THEME, type ThemeChoice, isThemeChoice } from "@/lib/theme";
 import { getDb } from "./index";
 import { settings, type TaskRow, tasks } from "./schema";
 
@@ -120,4 +121,32 @@ export async function setSlime(id: string): Promise<void> {
     .insert(settings)
     .values({ key: SLIME_KEY, value: id })
     .onConflictDoUpdate({ target: settings.key, set: { value: id } });
+}
+
+const THEME_KEY = "theme";
+
+/**
+ * The stored theme choice, or "system" when unset — the same never-null
+ * contract as the slime, and stored the same way and for the same reasons: a
+ * cookie is per-browser and would be lost with site data while the tasks
+ * survived, and `localStorage` is unreadable until after mount, which would
+ * force `<html>` to be written on the client and put the flash of the wrong
+ * theme back in.
+ */
+export async function getTheme(): Promise<ThemeChoice> {
+  const db = await getDb();
+  const [row] = await db.select().from(settings).where(eq(settings.key, THEME_KEY)).limit(1);
+  return isThemeChoice(row?.value) ? row.value : DEFAULT_THEME;
+}
+
+/** Upserted in a single statement, keyed on `key`, so it cannot take the slime's row. */
+export async function setTheme(choice: string): Promise<void> {
+  if (!isThemeChoice(choice)) {
+    throw new Error(`Not a theme: ${JSON.stringify(choice)}`);
+  }
+  const db = await getDb();
+  await db
+    .insert(settings)
+    .values({ key: THEME_KEY, value: choice })
+    .onConflictDoUpdate({ target: settings.key, set: { value: choice } });
 }

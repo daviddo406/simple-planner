@@ -26,23 +26,30 @@ export interface SlimeVariant {
   base: string;
   /** The lit upper-left of the dome. */
   highlight: string;
-  /** The dark underside — and the app's accent when this slime is chosen. */
+  /** The dark underside — and the app's accent when this slime is chosen, on day paper. */
   shade: string;
+  /**
+   * The accent on night paper. Usually the base tone, which is already a
+   * mid-value built to sit inside an ink outline and therefore reads cleanly
+   * on a dark ground; midnight is the one slime whose base is too dark for it
+   * and carries a lightened tone of its own.
+   */
+  night: string;
 }
 
 export const SLIMES = {
-  plum: { base: "#9d6bbf", highlight: "#c4a3da", shade: "#5c3577" },
-  rose: { base: "#e08aa6", highlight: "#f2c0cf", shade: "#8f3454" },
-  sky: { base: "#6fa8dc", highlight: "#b3d3ef", shade: "#2b5c8f" },
-  teal: { base: "#4fb3a6", highlight: "#9bd8cf", shade: "#1e6b62" },
-  lemon: { base: "#f0d264", highlight: "#f8ebae", shade: "#7a6115" },
-  peach: { base: "#f4a878", highlight: "#fad2b6", shade: "#94491d" },
-  cherry: { base: "#e0605c", highlight: "#f0a5a2", shade: "#8f2320" },
-  cream: { base: "#e8d9b8", highlight: "#f5ecd8", shade: "#7a6843" },
-  bubblegum: { base: "#ef8fc9", highlight: "#f8c4e2", shade: "#96296b" },
-  moss: { base: "#8aad5c", highlight: "#c0d49c", shade: "#4a6323" },
-  midnight: { base: "#5a6ba8", highlight: "#9aa6cd", shade: "#2b3866" },
-  amber: { base: "#e3a13c", highlight: "#f2cc8f", shade: "#8a5510" },
+  plum: { base: "#9d6bbf", highlight: "#c4a3da", shade: "#5c3577", night: "#9d6bbf" },
+  rose: { base: "#e08aa6", highlight: "#f2c0cf", shade: "#8f3454", night: "#e08aa6" },
+  sky: { base: "#6fa8dc", highlight: "#b3d3ef", shade: "#2b5c8f", night: "#6fa8dc" },
+  teal: { base: "#4fb3a6", highlight: "#9bd8cf", shade: "#1e6b62", night: "#4fb3a6" },
+  lemon: { base: "#f0d264", highlight: "#f8ebae", shade: "#7a6115", night: "#f0d264" },
+  peach: { base: "#f4a878", highlight: "#fad2b6", shade: "#94491d", night: "#f4a878" },
+  cherry: { base: "#e0605c", highlight: "#f0a5a2", shade: "#8f2320", night: "#e0605c" },
+  cream: { base: "#e8d9b8", highlight: "#f5ecd8", shade: "#7a6843", night: "#e8d9b8" },
+  bubblegum: { base: "#ef8fc9", highlight: "#f8c4e2", shade: "#96296b", night: "#ef8fc9" },
+  moss: { base: "#8aad5c", highlight: "#c0d49c", shade: "#4a6323", night: "#8aad5c" },
+  midnight: { base: "#5a6ba8", highlight: "#9aa6cd", shade: "#2b3866", night: "#7284c4" },
+  amber: { base: "#e3a13c", highlight: "#f2cc8f", shade: "#8a5510", night: "#e3a13c" },
 } as const satisfies Record<string, SlimeVariant>;
 
 export type SlimeId = keyof typeof SLIMES;

@@ -1,5 +1,8 @@
 // @vitest-environment node
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { describe, expect, test } from "vitest";
+import { contrast } from "./contrast";
 import { DEFAULT_SLIME_ID, SLIMES, SLIME_IDS, isSlimeId } from "./slimes";
 
 describe("the twelve slimes", () => {
@@ -8,12 +11,13 @@ describe("the twelve slimes", () => {
     expect(new Set(SLIME_IDS).size).toBe(12);
   });
 
-  test("every variant defines all three fill tokens", () => {
+  test("every variant defines all four tones", () => {
     for (const id of SLIME_IDS) {
       const slime = SLIMES[id];
       expect(slime.base, id).toMatch(/^#[0-9a-f]{6}$/);
       expect(slime.highlight, id).toMatch(/^#[0-9a-f]{6}$/);
       expect(slime.shade, id).toMatch(/^#[0-9a-f]{6}$/);
+      expect(slime.night, id).toMatch(/^#[0-9a-f]{6}$/);
     }
   });
 
@@ -50,19 +54,6 @@ describe("isSlimeId", () => {
  */
 const PAPER = "#f2ede0";
 
-function relativeLuminance(hex: string): number {
-  const channels = [1, 3, 5].map((offset) => {
-    const value = parseInt(hex.slice(offset, offset + 2), 16) / 255;
-    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
-}
-
-function contrast(a: string, b: string): number {
-  const [high, low] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x);
-  return (high + 0.05) / (low + 0.05);
-}
-
 describe("the accent, as text on paper", () => {
   test("every shade clears 4.5:1", () => {
     for (const id of SLIME_IDS) {
@@ -73,5 +64,30 @@ describe("the accent, as text on paper", () => {
   test("the formula agrees with a known pair", () => {
     // Guards the guard: ink on paper is documented at 15.48:1.
     expect(contrast("#171613", PAPER)).toBeCloseTo(15.48, 1);
+  });
+});
+
+/**
+ * The night accent is the same job on the other ground. It is read out of the
+ * stylesheet rather than pasted here, so darkening night paper by a step can
+ * never quietly drop a slime below the line without this failing.
+ */
+const NIGHT_PAPER = /--night-paper:\s*(#[0-9a-fA-F]{6})/.exec(
+  readFileSync(fileURLToPath(new URL("../app/globals.css", import.meta.url)), "utf8"),
+)![1];
+
+describe("the accent, as text on night paper", () => {
+  test("every night tone clears 4.5:1", () => {
+    for (const id of SLIME_IDS) {
+      expect(contrast(SLIMES[id].night, NIGHT_PAPER), id).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  test("no slime uses one tone for both grounds", () => {
+    // A shade dark enough to read on paper is, by construction, too dark to
+    // read on night paper. If the two are ever equal, one of them is wrong.
+    for (const id of SLIME_IDS) {
+      expect(SLIMES[id].night, id).not.toBe(SLIMES[id].shade);
+    }
   });
 });
