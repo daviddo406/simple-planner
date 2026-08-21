@@ -62,3 +62,37 @@ export async function setTheme(choice: string): Promise<void> {
   // would leave a client-side navigation carrying the previous ramp.
   revalidatePath("/", "layout");
 }
+
+/**
+ * The week's list. The week key comes from the client for the same reason the
+ * day key does — only the client knows which week is on screen — and
+ * `db.addTodo` normalizes it to a Monday before it reaches a query.
+ *
+ * Page-scope revalidation, unlike the theme and slime actions: the list is
+ * rendered inside `<main>`, and nothing about it reaches <html>.
+ */
+export async function addTodo(weekKey: string, title: string): Promise<void> {
+  if (!title.trim()) {
+    return;
+  }
+  await db.addTodo(weekKey, title);
+  revalidatePath("/");
+}
+
+export async function toggleTodo(id: number): Promise<void> {
+  await db.toggleTodo(id);
+  revalidatePath("/");
+}
+
+export async function renameTodo(id: number, title: string): Promise<void> {
+  if (!title.trim()) {
+    return;
+  }
+  await db.renameTodo(id, title);
+  revalidatePath("/");
+}
+
+export async function deleteTodo(id: number): Promise<void> {
+  await db.deleteTodo(id);
+  revalidatePath("/");
+}

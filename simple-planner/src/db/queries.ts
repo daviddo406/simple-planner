@@ -1,9 +1,14 @@
 import { asc, eq, inArray, sql } from "drizzle-orm";
-import { dayKey as toDayKey, daysOfWeek, parseDayKey } from "@/lib/calendar";
+import {
+  dayKey as toDayKey,
+  daysOfWeek,
+  parseDayKey,
+  startOfWeekMonday,
+} from "@/lib/calendar";
 import { DEFAULT_SLIME_ID, type SlimeId, isSlimeId } from "@/lib/slimes";
 import { DEFAULT_THEME, type ThemeChoice, isThemeChoice } from "@/lib/theme";
 import { getDb } from "./index";
-import { settings, type TaskRow, tasks } from "./schema";
+import { settings, type TaskRow, tasks, type WeekTodoRow, weekTodos } from "./schema";
 
 /**
  * The only module that imports Drizzle. Server Actions and components call the
@@ -149,4 +154,64 @@ export async function setTheme(choice: string): Promise<void> {
     .insert(settings)
     .values({ key: THEME_KEY, value: choice })
     .onConflictDoUpdate({ target: settings.key, set: { value: choice } });
+}
+
+export type WeekTodo = WeekTodoRow;
+
+/**
+ * Every week key is normalized to its Monday before it touches a query, so the
+ * seven `?week=` values that name one week cannot address seven lists. This is
+ * the same reason the page normalizes `?week=` before rendering — done in both
+ * places because both receive the value straight from the client.
+ */
+function weekKeyOf(key: string): string {
+  return toDayKey(startOfWeekMonday(parseDayKey(key)));
+}
+
+/** The week's list, oldest first — an empty array when nothing is on it. */
+export async function todosForWeek(weekKey: string): Promise<WeekTodo[]> {
+  const db = await getDb();
+  return db
+    .select()
+    .from(weekTodos)
+    .where(eq(weekTodos.weekKey, weekKeyOf(weekKey)))
+    // `createdAt` alone can tie when two inserts land in the same instant; `id`
+    // breaks it, as in `tasksForWeek`.
+    .orderBy(asc(weekTodos.createdAt), asc(weekTodos.id));
+}
+
+export async function addTodo(weekKey: string, title: string): Promise<WeekTodo> {
+  const trimmed = title.trim();
+  if (!trimmed) {
+    throw new Error("A todo needs a title.");
+  }
+  const db = await getDb();
+  const [row] = await db
+    .insert(weekTodos)
+    .values({ weekKey: weekKeyOf(weekKey), title: trimmed })
+    .returning();
+  return row;
+}
+
+/** A single statement, like `toggleTask`; a missing id is a no-op, not an error. */
+export async function toggleTodo(id: number): Promise<void> {
+  const db = await getDb();
+  await db
+    .update(weekTodos)
+    .set({ isCompleted: sql`not ${weekTodos.isCompleted}` })
+    .where(eq(weekTodos.id, id));
+}
+
+export async function renameTodo(id: number, title: string): Promise<void> {
+  const trimmed = title.trim();
+  if (!trimmed) {
+    throw new Error("A todo needs a title.");
+  }
+  const db = await getDb();
+  await db.update(weekTodos).set({ title: trimmed }).where(eq(weekTodos.id, id));
+}
+
+export async function deleteTodo(id: number): Promise<void> {
+  const db = await getDb();
+  await db.delete(weekTodos).where(eq(weekTodos.id, id));
 }

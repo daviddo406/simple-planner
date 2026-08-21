@@ -4,7 +4,8 @@ import { TodayMarker } from "@/components/TodayMarker";
 import { WeekPage } from "@/components/WeekPage";
 import { SlimePicker } from "@/components/SlimePicker";
 import { ThemePicker } from "@/components/ThemePicker";
-import { getSlime, getTheme, tasksForWeek } from "@/db/queries";
+import { WeekTodoList } from "@/components/WeekTodoList";
+import { getSlime, getTheme, tasksForWeek, todosForWeek } from "@/db/queries";
 import { dayKey, isDayKey, parseDayKey, shiftMonth, startOfWeekMonday } from "@/lib/calendar";
 import { holidaysByDayKey, holidaysForYear } from "@/lib/holidays";
 import { WeekRedirect } from "./week-redirect";
@@ -39,7 +40,12 @@ export default async function Page({ searchParams }: PageProps<"/">) {
       ? dayKey(shiftMonth(parseDayKey(requestedMonth), 0))
       : dayKey(shiftMonth(parseDayKey(weekKey), 0));
 
-  const [tasks, slime, theme] = await Promise.all([tasksForWeek(weekKey), getSlime(), getTheme()]);
+  const [tasks, todos, slime, theme] = await Promise.all([
+    tasksForWeek(weekKey),
+    todosForWeek(weekKey),
+    getSlime(),
+    getTheme(),
+  ]);
   const holidays = holidaysByDayKey(weekKey);
   // The grid can show a month either side of the selected week, so the mini
   // calendar is given the whole visible year's holidays rather than the week's.
@@ -60,6 +66,9 @@ export default async function Page({ searchParams }: PageProps<"/">) {
           <MiniCalendar weekKey={weekKey} monthKey={monthKey} holidayKeys={monthHolidayKeys} />
           <SlimePicker selected={slime} />
           <ThemePicker selected={theme} />
+          {/* Keyed on the week so switching weeks remounts the list rather
+              than carrying the previous week's optimistic state into it. */}
+          <WeekTodoList key={weekKey} weekKey={weekKey} todos={todos} />
           <TodayMarker />
         </aside>
         <div className="w-full grow">

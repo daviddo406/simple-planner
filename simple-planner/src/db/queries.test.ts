@@ -7,14 +7,19 @@ import { beforeEach, describe, expect, test } from "vitest";
 import { resetDb } from "./index";
 import {
   addTask,
+  addTodo,
   deleteTask,
+  deleteTodo,
   getSlime,
   getTheme,
   renameTask,
+  renameTodo,
   setSlime,
   setTheme,
   tasksForWeek,
+  todosForWeek,
   toggleTask,
+  toggleTodo,
 } from "./queries";
 
 const MONDAY = "2026-06-29";
@@ -251,5 +256,124 @@ describe("the theme preference", () => {
     await setTheme("dark");
     expect(await getSlime()).toBe("moss");
     expect(await getTheme()).toBe("dark");
+  });
+});
+
+describe("todosForWeek", () => {
+  test("returns an empty list, not undefined, for a week with no todos", async () => {
+    expect(await todosForWeek(MONDAY)).toEqual([]);
+  });
+
+  test("reads back a todo added to the same week", async () => {
+    await addTodo(MONDAY, "renew the passport");
+    expect((await todosForWeek(MONDAY)).map((todo) => todo.title)).toEqual(["renew the passport"]);
+  });
+
+  test("starts a todo incomplete", async () => {
+    await addTodo(MONDAY, "renew the passport");
+    expect((await todosForWeek(MONDAY))[0].isCompleted).toBe(false);
+  });
+
+  test("omits a todo belonging to another week", async () => {
+    await addTodo("2026-07-06", "next week's list");
+    expect(await todosForWeek(MONDAY)).toEqual([]);
+  });
+
+  test("keeps todos out of the day-task lists entirely", async () => {
+    // The reason `week_todos` is its own table: a todo stored as a task dated
+    // Monday would render inside the Monday section of the week page.
+    await addTodo(MONDAY, "renew the passport");
+
+    const week = await tasksForWeek(MONDAY);
+    for (const key of WEEK) {
+      expect(week[key]).toEqual([]);
+    }
+  });
+
+  test("returns todos in the order they were added", async () => {
+    await addTodo(MONDAY, "first");
+    await addTodo(MONDAY, "second");
+    await addTodo(MONDAY, "third");
+
+    expect((await todosForWeek(MONDAY)).map((todo) => todo.title)).toEqual([
+      "first",
+      "second",
+      "third",
+    ]);
+  });
+
+  test("files a todo added under a midweek day onto that week's one list", async () => {
+    // Every day of a week names the same list, so a stale `?week=` naming a
+    // Thursday cannot create a second list beside the Monday one.
+    await addTodo("2026-07-02", "renew the passport");
+
+    expect((await todosForWeek(MONDAY)).map((todo) => todo.title)).toEqual(["renew the passport"]);
+  });
+
+  test("reads back the same list whichever day of the week is asked for", async () => {
+    await addTodo(MONDAY, "renew the passport");
+    expect((await todosForWeek("2026-07-05")).map((todo) => todo.title)).toEqual([
+      "renew the passport",
+    ]);
+  });
+});
+
+describe("addTodo", () => {
+  test("trims the title", async () => {
+    await addTodo(MONDAY, "  padded  ");
+    expect((await todosForWeek(MONDAY))[0].title).toBe("padded");
+  });
+
+  test("rejects a blank title", async () => {
+    await expect(addTodo(MONDAY, "   ")).rejects.toThrow();
+  });
+
+  test("rejects a week key that is not a real date", async () => {
+    await expect(addTodo("2026-02-30", "impossible")).rejects.toThrow();
+  });
+});
+
+describe("toggleTodo", () => {
+  test("flips completion", async () => {
+    const todo = await addTodo(MONDAY, "renew the passport");
+
+    await toggleTodo(todo.id);
+    expect((await todosForWeek(MONDAY))[0].isCompleted).toBe(true);
+
+    await toggleTodo(todo.id);
+    expect((await todosForWeek(MONDAY))[0].isCompleted).toBe(false);
+  });
+
+  test("is a no-op for an id that does not exist", async () => {
+    await expect(toggleTodo(9999)).resolves.toBeUndefined();
+  });
+});
+
+describe("renameTodo", () => {
+  test("changes the title", async () => {
+    const todo = await addTodo(MONDAY, "renew the passport");
+    await renameTodo(todo.id, "renew the licence");
+    expect((await todosForWeek(MONDAY))[0].title).toBe("renew the licence");
+  });
+
+  test("rejects a blank title", async () => {
+    const todo = await addTodo(MONDAY, "renew the passport");
+    await expect(renameTodo(todo.id, "   ")).rejects.toThrow();
+  });
+});
+
+describe("deleteTodo", () => {
+  test("removes the todo", async () => {
+    const todo = await addTodo(MONDAY, "renew the passport");
+    await deleteTodo(todo.id);
+    expect(await todosForWeek(MONDAY)).toEqual([]);
+  });
+
+  test("leaves the other todos in the week alone", async () => {
+    const todo = await addTodo(MONDAY, "renew the passport");
+    await addTodo(MONDAY, "keep me");
+
+    await deleteTodo(todo.id);
+    expect((await todosForWeek(MONDAY)).map((t) => t.title)).toEqual(["keep me"]);
   });
 });
