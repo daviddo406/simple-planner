@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local + e2e PGlite data directories — never committed, never deployed
+/.pglite/
+
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
