@@ -4,6 +4,8 @@
 import { afterAll, describe, expect, test } from "vitest";
 import {
   dayKey,
+  formatDayLabel,
+  isDayKey,
   daysOfWeek,
   formatWeekRange,
   monthGrid,
@@ -11,6 +13,7 @@ import {
   parseDayKey,
   shiftMonth,
   startOfWeekMonday,
+  weekdayAbbreviation,
   weekdayHeaders,
 } from "./calendar";
 
@@ -239,5 +242,33 @@ describe("shiftMonth", () => {
   test("does not roll over from a long month into the wrong one", () => {
     // Naive `setMonth` on the 31st of March lands in May, not April.
     expect(dayKey(shiftMonth(new Date(2026, 2, 31), 1))).toBe("2026-04-01");
+  });
+});
+
+describe("isDayKey", () => {
+  test("accepts a real calendar date", () => {
+    expect(isDayKey("2026-07-04")).toBe(true);
+  });
+
+  test.each(["2026-7-4", "not-a-date", "2026-07-04T00:00:00Z", "", "2026-02-30"])(
+    "rejects %j",
+    (bad) => {
+      // Guards a value that arrives in the URL, so it must not throw on junk.
+      expect(isDayKey(bad)).toBe(false);
+    },
+  );
+});
+
+describe("weekdayAbbreviation", () => {
+  test("is the uppercase three-letter weekday", () => {
+    expect(weekdayAbbreviation(new Date(2026, 6, 4))).toBe("SAT");
+    expect(weekdayAbbreviation(new Date(2026, 5, 29))).toBe("MON");
+  });
+});
+
+describe("formatDayLabel", () => {
+  test("names the weekday, date, and month for a screen reader", () => {
+    expect(formatDayLabel(new Date(2026, 6, 4))).toBe("Saturday 4 July");
+    expect(formatDayLabel(new Date(2026, 5, 29))).toBe("Monday 29 June");
   });
 });

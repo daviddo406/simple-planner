@@ -87,6 +87,25 @@
   --text-body-sm--line-height: 16px;
 }
 
+/*
+ * A completed task's strikethrough, drawn as a hard 2px rule rather than with
+ * `text-decoration: line-through`, whose thickness is font-derived and lands
+ * off the grid. Painting it as a repeating background instead of a single
+ * pseudo-element means it strikes every line of a title that wraps, not just
+ * the first, and the 32px tile is exactly the body line-height.
+ */
+@utility strike-pixel {
+  background-image: linear-gradient(
+    to bottom,
+    transparent 16px,
+    currentColor 16px,
+    currentColor 18px,
+    transparent 18px
+  );
+  background-repeat: repeat-y;
+  background-size: 100% 32px;
+}
+
 @layer base {
   /*
    * Rule 1, belt and braces. Clearing the scale above stops anyone typing a

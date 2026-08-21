@@ -25,6 +25,31 @@ const MONTH_NAMES = [
 
 const DAY_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
+const WEEKDAY_NAMES = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+] as const;
+
+const FULL_MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+] as const;
+
 /**
  * Midday on the same civil date. Day arithmetic is done from here so a DST
  * transition — which in some zones deletes midnight itself — cannot round a
@@ -152,4 +177,32 @@ export function formatWeekRange(date: Date): string {
  */
 export function shiftMonth(date: Date, delta: number): Date {
   return new Date(date.getFullYear(), date.getMonth() + delta, 1);
+}
+
+/**
+ * Whether `key` is a real `YYYY-MM-DD` calendar date. Unlike
+ * {@link parseDayKey} this never throws, because it guards a value that
+ * arrives in the URL, where junk is routine rather than exceptional.
+ */
+export function isDayKey(key: string): boolean {
+  try {
+    parseDayKey(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** `SAT` — the day section's heading, in the display face. */
+export function weekdayAbbreviation(date: Date): string {
+  return WEEKDAY_NAMES[date.getDay()].slice(0, 3).toUpperCase();
+}
+
+/**
+ * `Saturday 4 July` — the accessible name of a day section. The visible
+ * heading is split across an abbreviation and a bare number for the layout, so
+ * this is what a screen reader gets instead.
+ */
+export function formatDayLabel(date: Date): string {
+  return `${WEEKDAY_NAMES[date.getDay()]} ${date.getDate()} ${FULL_MONTH_NAMES[date.getMonth()]}`;
 }
