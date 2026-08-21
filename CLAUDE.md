@@ -127,8 +127,12 @@ npm run lint     # eslint
 npm test         # vitest run — 132 tests
 npm run test:e2e # playwright — 17 tests against a production build on PGlite
 
-# The dev server needs a database. Without Vercel credentials, use PGlite:
+# The dev server needs a database. Three drivers, chosen with DB_DRIVER:
+#   pglite   — Postgres as WASM, in-process. No account, no network. Used by the test suites.
+#   postgres — the standard wire protocol: Supabase, Railway, RDS, or a local Postgres.
+#   neon     — the default; Neon's HTTP driver, which is what production runs.
 DB_DRIVER=pglite PGLITE_DATA_DIR=.pglite/dev DATABASE_URL=pglite://.pglite/dev npm run dev
+DB_DRIVER=postgres DATABASE_URL="postgres://$USER@127.0.0.1:5432/planner" npm run dev
 
 # Migrations. db:generate needs a URL present but does not connect.
 DATABASE_URL="postgres://localhost/placeholder" npx drizzle-kit generate --name=<name>
@@ -162,7 +166,12 @@ Vercel account.
 - **One file names a driver, one file imports Drizzle.** `src/db/index.ts` and
   `src/db/queries.ts`; everything else calls named query functions. Keep migrations to portable
   Postgres — the same ones run against Neon in production and PGlite in the tests, so a broken
-  seam fails `npm test` rather than the migration.
+  seam fails `npm test` rather than the migration. Verified on three backends: PGlite, a real
+  Postgres 14 server, and the Neon code path.
+- **`npm run db:migrate` uses `pg`, not the Neon driver**, and therefore works against any
+  Postgres including Neon. `@neondatabase/serverless` speaks only to Neon over HTTP/WebSocket,
+  and drizzle-kit will silently prefer it and then hang against a plain server if `pg` is not
+  installed.
 - **Nothing is ever written to disk.** Vercel Functions have no persistent filesystem; files go
   through the `BlobStore` interface in `src/storage/blob.ts`, which deliberately has no callers.
 - **Migrations never run at request time** on the Neon path. `src/db/index.ts` does bootstrap the

@@ -42,6 +42,14 @@ describe("resolveDriver", () => {
     expect(resolveDriver({ DB_DRIVER: "neon" })).toBe("neon");
   });
 
+  test("offers a plain TCP driver for any other Postgres", () => {
+    // Neon's HTTP driver only speaks to Neon. Supabase, Railway, RDS, and a
+    // self-hosted Postgres need the standard wire protocol, so "swapping
+    // providers is a connection string" has to come with a driver that can
+    // actually dial them.
+    expect(resolveDriver({ DB_DRIVER: "postgres" })).toBe("postgres");
+  });
+
   test("rejects an unknown driver rather than silently falling back", () => {
     expect(() => resolveDriver({ DB_DRIVER: "sqlite" })).toThrow(/sqlite/);
   });

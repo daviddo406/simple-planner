@@ -33,6 +33,23 @@ async function connect(): Promise<Database> {
     return drizzle(neon(resolveDatabaseUrl(process.env)), { schema });
   }
 
+  if (driver === "postgres") {
+    // The standard wire protocol, for every Postgres that is not Neon —
+    // Supabase, Railway, RDS, or a self-hosted server. Neon's HTTP driver
+    // speaks only to Neon, so without this the "swapping providers is a
+    // connection string" claim would hold for exactly one provider.
+    //
+    // On a serverless platform this must be pointed at the provider's
+    // *pooled* connection string, not the direct one: functions are the
+    // classic way to exhaust a Postgres connection limit.
+    const [{ Pool }, { drizzle }] = await Promise.all([
+      import("pg"),
+      import("drizzle-orm/node-postgres"),
+    ]);
+    const pool = new Pool({ connectionString: resolveDatabaseUrl(process.env) });
+    return drizzle(pool, { schema });
+  }
+
   const [{ PGlite }, { drizzle }, { migrate }] = await Promise.all([
     import("@electric-sql/pglite"),
     import("drizzle-orm/pglite"),

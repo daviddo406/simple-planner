@@ -14,22 +14,56 @@ npm install
 npm run dev
 ```
 
-The dev server needs a database. Either point it at a real Postgres:
+The dev server needs a database. There are three drivers, chosen with `DB_DRIVER`, and only one
+file in the codebase names any of them (`src/db/index.ts`).
 
-```bash
-vercel link
-vercel install neon          # provisions Postgres from the Vercel Marketplace
-vercel env pull .env.local   # writes DATABASE_URL
-npm run db:migrate           # applies drizzle/*.sql
-npm run dev
-```
+### No account, no network — PGlite
 
-…or run against PGlite — Postgres compiled to WASM, in-process — which needs no network and no
-account, and bootstraps its own schema from the same checked-in migrations:
+Postgres compiled to WASM, running in-process. It bootstraps its own schema from the same
+checked-in migrations, so there is nothing to provision:
 
 ```bash
 DB_DRIVER=pglite PGLITE_DATA_DIR=.pglite/dev DATABASE_URL=pglite://.pglite/dev npm run dev
 ```
+
+This is what `npm test` and `npm run test:e2e` use.
+
+### Any Postgres — `DB_DRIVER=postgres`
+
+Supabase, Railway, Render, RDS, Neon, or a Postgres on your own machine. Get a connection string
+from the provider's dashboard, put it in `.env.local`, and apply the migrations:
+
+```bash
+echo 'DATABASE_URL=postgres://user:password@host:5432/dbname' >> .env.local
+echo 'DB_DRIVER=postgres' >> .env.local
+npm run db:migrate
+npm run dev
+```
+
+A local Postgres works the same way:
+
+```bash
+brew services start postgresql@14 && createdb planner
+DATABASE_URL="postgres://$USER@127.0.0.1:5432/planner" npm run db:migrate
+DB_DRIVER=postgres DATABASE_URL="postgres://$USER@127.0.0.1:5432/planner" npm run dev
+```
+
+On a serverless host, point this at the provider's **pooled** connection string, not the direct
+one — functions are the classic way to exhaust a Postgres connection limit.
+
+### Neon on Vercel — `DB_DRIVER=neon` (the default)
+
+The production configuration. Neon's HTTP driver avoids holding a TCP connection open from a
+function that may live for milliseconds, and every query here is a single statement, so its one
+real limitation — no interactive transactions — costs nothing.
+
+**You do not need the Vercel CLI.** In the Vercel dashboard: create the project, open its
+**Storage** tab, add a Marketplace Postgres (Neon), and Vercel injects the connection variables
+into the project's environment. Copy `DATABASE_URL` from **Settings → Environment Variables** into
+a local `.env.local` and run `npm run db:migrate`.
+
+If you would rather use the CLI, it needs no install — `npx vercel link`, `npx vercel env pull
+.env.local`.
 
 ## Scripts
 
@@ -43,7 +77,7 @@ DB_DRIVER=pglite PGLITE_DATA_DIR=.pglite/dev DATABASE_URL=pglite://.pglite/dev n
 | `npm run test:watch` | The same, in watch mode |
 | `npm run test:e2e` | Playwright against a production build backed by PGlite |
 | `npm run db:generate` | Generate a migration from `src/db/schema.ts` into `drizzle/` |
-| `npm run db:migrate` | Apply `drizzle/*.sql` to `DATABASE_URL` |
+| `npm run db:migrate` | Apply `drizzle/*.sql` to `DATABASE_URL` (uses `pg`, so it works against any Postgres) |
 | `npm run probe:fonts` | Measure which font sizes are on each bitmap face's pixel grid |
 
 `npm test` and `npm run test:e2e` need no network and no Vercel account, so CI does not need
@@ -58,7 +92,8 @@ database credentials.
    calendar fields — never `toISOString().slice(0, 10)`, which converts to UTC first and lands on
    the wrong day for anyone far enough east.
 3. **One file names a driver, one file imports Drizzle.** `src/db/index.ts` and
-   `src/db/queries.ts`. Everything else calls named query functions.
+   `src/db/queries.ts`. Everything else calls named query functions, so changing provider is a
+   connection string and a `DB_DRIVER` value.
 4. **The theme has six rules**, all of them things the browser does by default that
    `src/app/globals.css` switches off: nothing is round, nothing is blurred, everything lands on
    the 4px grid, borders are 2px, type is unsmoothed bitmap type at integer multiples of its

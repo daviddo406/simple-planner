@@ -12,7 +12,7 @@ const CONNECTION_VARIABLES = [
   "POSTGRES_PRISMA_URL",
 ] as const;
 
-export const DRIVERS = ["neon", "pglite"] as const;
+export const DRIVERS = ["neon", "postgres", "pglite"] as const;
 export type Driver = (typeof DRIVERS)[number];
 
 type Env = Record<string, string | undefined>;
@@ -32,7 +32,8 @@ export function resolveDatabaseUrl(env: Env): string {
 }
 
 /**
- * `neon` in production, `pglite` in the unit tests and the E2E suite. Defaults
+ * `neon` in production, `postgres` for any other Postgres over the standard
+ * wire protocol, `pglite` in the unit tests and the E2E suite. Defaults
  * to neon so a deploy never depends on a variable being set, and throws rather
  * than falling back when the value is unrecognized — a typo that silently
  * pointed production at an in-process database would be much worse.

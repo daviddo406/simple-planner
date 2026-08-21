@@ -67,7 +67,7 @@ What each kind of move then costs:
 
 | Move | Cost |
 |---|---|
-| Neon → Supabase / Railway / RDS / self-hosted Postgres | A connection string. Nothing in the codebase changes |
+| Neon → Supabase / Railway / RDS / self-hosted Postgres | A connection string and `DB_DRIVER=postgres`. Nothing else in the codebase changes — the driver itself was the gap, since Neon's HTTP driver speaks only to Neon; `src/db/index.ts` now carries a `node-postgres` branch alongside it, and the app has been run end to end on a real Postgres 14 server |
 | Neon HTTP driver → a TCP/pooled driver | One import in `src/db/index.ts` |
 | Postgres → a different database entirely | Rewrite `src/db/queries.ts` and the schema. Every caller is unaffected, because they only ever called functions |
 | Vercel Blob → S3 / R2 / Supabase Storage | One implementation of `BlobStore` |
