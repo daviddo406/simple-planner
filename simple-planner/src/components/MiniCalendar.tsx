@@ -44,7 +44,7 @@ export function MiniCalendar({
   return (
     <PixelFrame className="w-max p-4">
       <div className="mb-3 flex items-center justify-between gap-6">
-        <span className="font-display text-display-md">{monthLabel(month)}</span>
+        <span className="font-display text-display-md text-accent">{monthLabel(month)}</span>
         <div className="flex gap-2">
           <PixelButton
             as={Link}
@@ -72,7 +72,7 @@ export function MiniCalendar({
                 // so the column index is the only stable key.
                 key={column}
                 scope="col"
-                className="size-8 font-display text-display-sm font-normal text-ink-faint"
+                className="size-8 font-display text-display-sm font-normal text-accent"
               >
                 {letter}
               </th>

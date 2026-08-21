@@ -1,4 +1,5 @@
 import { SLIMES, type SlimeId } from "@/lib/slimes";
+import { pixelRuns } from "./pixel-sprite";
 
 /**
  * The sprite, hand-authored on a 16x14 pixel grid and emitted as inline SVG
@@ -48,22 +49,6 @@ export function Slime({
     S: variant.shade,
   };
 
-  // One rect per horizontal run rather than one per pixel: same picture, a
-  // fraction of the nodes, and every coordinate still an integer.
-  const rects: { x: number; y: number; width: number; fill: string }[] = [];
-  PIXELS.forEach((row, y) => {
-    let x = 0;
-    while (x < WIDTH) {
-      const symbol = row[x];
-      let run = 1;
-      while (x + run < WIDTH && row[x + run] === symbol) run++;
-      if (symbol !== ".") {
-        rects.push({ x, y, width: run, fill: fills[symbol] });
-      }
-      x += run;
-    }
-  });
-
   return (
     <svg
       // Mandatory. Browsers antialias SVG rect edges by default, and without
@@ -78,14 +63,17 @@ export function Slime({
       focusable="false"
       className={className}
     >
-      {rects.map((rect) => (
+      {/* One rect per horizontal run rather than one per pixel: same
+          picture, a fraction of the nodes, and every coordinate still an
+          integer. Shared with the backdrop's cloud. */}
+      {pixelRuns(PIXELS).map((run) => (
         <rect
-          key={`${rect.x}-${rect.y}`}
-          x={rect.x}
-          y={rect.y}
-          width={rect.width}
+          key={`${run.x}-${run.y}`}
+          x={run.x}
+          y={run.y}
+          width={run.width}
           height={1}
-          fill={rect.fill}
+          fill={fills[run.symbol]}
         />
       ))}
     </svg>

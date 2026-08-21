@@ -1,3 +1,4 @@
+import { Backdrop } from "@/components/Backdrop";
 import { MiniCalendar } from "@/components/MiniCalendar";
 import { TodayMarker } from "@/components/TodayMarker";
 import { WeekPage } from "@/components/WeekPage";
@@ -47,21 +48,24 @@ export default async function Page({ searchParams }: PageProps<"/">) {
   );
 
   return (
-    <main
-      // The chosen slime's shade *is* the accent. Publishing it as the token
-      // here means the week rule and the holiday square pick it up with no
-      // component knowing a slime exists.
-      style={{ "--color-accent": SLIMES[slime].shade } as React.CSSProperties}
-      className="mx-auto flex max-w-280 flex-col items-start gap-8 p-6 lg:flex-row"
-    >
-      <aside className="flex shrink-0 flex-col gap-4">
-        <MiniCalendar weekKey={weekKey} monthKey={monthKey} holidayKeys={monthHolidayKeys} />
-        <SlimePicker selected={slime} />
-        <TodayMarker />
-      </aside>
-      <div className="w-full grow">
-        <WeekPage weekKey={weekKey} tasks={tasks} holidays={holidays} slime={slime} />
-      </div>
-    </main>
+    <>
+      <Backdrop />
+      <main
+          // The chosen slime's shade *is* the accent. Publishing it as the token
+        // here means the week rule and the holiday square pick it up with no
+        // component knowing a slime exists.
+        style={{ "--color-accent": SLIMES[slime].shade } as React.CSSProperties}
+        className="mx-auto flex max-w-320 flex-col items-start gap-8 p-6 lg:flex-row"
+      >
+        <aside className="flex shrink-0 flex-col gap-4">
+          <MiniCalendar weekKey={weekKey} monthKey={monthKey} holidayKeys={monthHolidayKeys} />
+          <SlimePicker selected={slime} />
+          <TodayMarker />
+        </aside>
+        <div className="w-full grow">
+          <WeekPage weekKey={weekKey} tasks={tasks} holidays={holidays} slime={slime} />
+        </div>
+      </main>
+    </>
   );
 }

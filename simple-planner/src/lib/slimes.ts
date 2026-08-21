@@ -3,17 +3,23 @@
  * picks one, it sits in the week header, and its shade becomes the app's
  * accent.
  *
- * These are a separate token family from the ink/paper ramp and they are
- * **fill-only**: a slime token is never a text color and never sits behind
- * text. Several of the twelve — lemon, cream, peach — cannot carry text on
- * paper at 4.5:1 and never will. What keeps that safe is that the accent only
- * ever appears as non-text marks: the sprite itself, the 2px rule under the
- * week header, and the holiday square.
+ * These are a separate token family from the ink/paper ramp, and they split
+ * two ways. The *base* and *highlight* are fill-only — several of the twelve,
+ * lemon and cream and peach among them, could never carry text on paper — and
+ * they are painted nowhere but inside the sprite, where a 2px ink outline
+ * encloses them.
  *
- * The *shade* is the accent, not the base. The base and highlight are only
- * ever painted inside the sprite, where a 2px ink outline encloses them; the
- * shade is the one that stands alone on paper, so it is the one checked at
- * 3:1. All twelve clear it, the worst (cream) at 4.47:1.
+ * The *shade* is the one that stands alone on paper, so it is the one that is
+ * measured. It is the app's accent: the 2px rule under the week header, the
+ * holiday square, and — since the planner's headings and day labels are tinted
+ * by the chosen slime — real text. That last use is why every shade is held to
+ * **4.5:1 against paper**, the body-text threshold, rather than the 3:1 a
+ * non-text mark would need. Eleven cleared it as drawn; cream is the one that
+ * had to be darkened for it (4.47:1 to 4.62:1), which is a change no eye can
+ * see and a screen reader's user very much can.
+ *
+ * `slimes.test.ts` recomputes all twelve ratios rather than trusting this
+ * comment, so a thirteenth slime cannot be added below the line.
  */
 export interface SlimeVariant {
   /** The body. */
@@ -32,7 +38,7 @@ export const SLIMES = {
   lemon: { base: "#f0d264", highlight: "#f8ebae", shade: "#7a6115" },
   peach: { base: "#f4a878", highlight: "#fad2b6", shade: "#94491d" },
   cherry: { base: "#e0605c", highlight: "#f0a5a2", shade: "#8f2320" },
-  cream: { base: "#e8d9b8", highlight: "#f5ecd8", shade: "#7d6a44" },
+  cream: { base: "#e8d9b8", highlight: "#f5ecd8", shade: "#7a6843" },
   bubblegum: { base: "#ef8fc9", highlight: "#f8c4e2", shade: "#96296b" },
   moss: { base: "#8aad5c", highlight: "#c0d49c", shade: "#4a6323" },
   midnight: { base: "#5a6ba8", highlight: "#9aa6cd", shade: "#2b3866" },

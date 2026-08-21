@@ -93,6 +93,29 @@ test.describe("the planner", () => {
     expect(labels[6]).toBe("Sunday 5 July");
   });
 
+  test("offers a way back to the current week only when away from it", async ({ page }) => {
+    const backToThisWeek = page.getByRole("link", { name: "This week" });
+
+    // On the current week there is nowhere to go back to, so nothing is shown.
+    await page.goto("/");
+    await expect(page.getByRole("region").first()).toBeVisible();
+    await expect(backToThisWeek).toBeHidden();
+
+    await page.goto(REFERENCE_URL);
+    await backToThisWeek.click();
+
+    // Back on the browser's own week — the same week `/` lands on.
+    const thisWeekMonday = await page.evaluate(() => {
+      const now = new Date();
+      const monday = new Date(now);
+      monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+      const pad = (n: number) => String(n).padStart(2, "0");
+      return `${monday.getFullYear()}-${pad(monday.getMonth() + 1)}-${pad(monday.getDate())}`;
+    });
+    await page.waitForURL((url) => url.searchParams.get("week") === thisWeekMonday);
+    await expect(backToThisWeek).toBeHidden();
+  });
+
   test("normalizes a mid-week ?week= to the week that contains it", async ({ page }) => {
     // The param is user input and may name any day.
     await page.goto("/?week=2026-07-02");
@@ -124,6 +147,31 @@ test.describe("the planner", () => {
     // The visual snapshot pins the default, so put it back.
     await page.locator('label:has(input[value="teal"])').click();
     await expect.poll(accent, { timeout: 10_000 }).toBe(before);
+  });
+
+  test("tints the headings and day labels with the chosen slime", async ({ page }) => {
+    await page.goto(REFERENCE_URL);
+
+    // bubblegum's shade, the value the token is set to when it is picked.
+    const bubblegum = "rgb(150, 41, 107)";
+    await page.locator('label:has(input[value="bubblegum"])').click();
+
+    const monday = page.getByRole("region", { name: "Monday 29 June" });
+    for (const label of [
+      page.getByRole("heading", { name: /JUN 29/ }),
+      // The mini calendar's month heading, whichever month it opens on.
+      page.locator("aside").getByText(/^[A-Z]{3} \d{4}$/),
+      monday.getByText("MON"),
+    ]) {
+      await expect.poll(() => label.evaluate((node) => getComputedStyle(node).color), {
+        timeout: 10_000,
+      }).toBe(bubblegum);
+    }
+
+    // The date number is content, not a label, and stays ink.
+    await expect(monday.getByText("29", { exact: true })).toHaveCSS("color", "rgb(23, 22, 19)");
+
+    await page.locator('label:has(input[value="teal"])').click();
   });
 });
 
@@ -259,6 +307,32 @@ test.describe("theme guards", () => {
       await context.close();
     });
   }
+
+  test("draws the backdrop without letting it touch the page", async ({ browser }) => {
+    // Scenery is only worth having if it cannot cost anything: no scrollbar,
+    // no swallowed clicks, nothing for a screen reader to read out.
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const page = await context.newPage();
+    await page.goto(REFERENCE_URL);
+
+    const backdrop = page.locator("[aria-hidden='true']").filter({ has: page.locator("svg") }).first();
+    await expect(backdrop).toBeAttached();
+
+    const overflows = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    );
+    expect(overflows, "the backdrop must be clipped, not scrolled to").toBe(false);
+
+    // A click where the scenery is lands on the page, not on a cloud.
+    await expect(page.locator("main")).toBeVisible();
+    const onTop = await page.evaluate(() => {
+      const element = document.elementFromPoint(20, 60);
+      return element?.closest("[aria-hidden='true']") !== null;
+    });
+    expect(onTop, "the backdrop must not sit above the page").toBe(false);
+
+    await context.close();
+  });
 
   test("has no accessibility violations", async ({ page }) => {
     // Aimed at the two failure modes this theme invites: a mid-tone palette

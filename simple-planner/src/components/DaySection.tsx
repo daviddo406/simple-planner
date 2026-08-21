@@ -26,7 +26,7 @@ export function DaySection({
     <PixelFrame as="section" aria-label={label} className="flex flex-col gap-3 p-4">
       <div className="flex items-baseline gap-3 border-b-2 border-ink-faint pb-2">
         <span className="font-display text-display-md">{date.getDate()}</span>
-        <span className="font-display text-display-sm text-ink-soft">
+        <span className="font-display text-display-sm text-accent">
           {weekdayAbbreviation(date)}
         </span>
         {holidays.length > 0 && (

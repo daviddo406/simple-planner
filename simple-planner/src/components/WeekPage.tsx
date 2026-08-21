@@ -3,6 +3,7 @@ import type { Task } from "@/db/queries";
 import { Slime } from "@/components/ui/Slime";
 import type { SlimeId } from "@/lib/slimes";
 import { DaySection } from "./DaySection";
+import { ThisWeekButton } from "./ThisWeekButton";
 
 /**
  * Seven dated sections, Monday first, derived entirely from `weekKey` — the
@@ -29,9 +30,17 @@ export function WeekPage({
         {/* Decoration, so it is hidden: announcing "teal slime" before every
             week range is noise. In the picker it is the opposite. */}
         <Slime id={slime} scale={2} />
-        <h1 className="font-display text-display-md uppercase">{formatWeekRange(days[0])}</h1>
+        <h1 className="font-display text-display-md uppercase text-accent">
+          {formatWeekRange(days[0])}
+        </h1>
+        <div className="ml-auto">
+          <ThisWeekButton weekKey={weekKey} />
+        </div>
       </header>
-      <div className="flex flex-col gap-4">
+      {/* Two facing columns, the way a paper planner opens: Mon/Tue, Wed/Thu,
+          Fri/Sat, then Sunday across the fold. One column below `md`, where a
+          half-width day is narrower than the task text it has to hold. */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:[&>section:last-child]:col-span-2">
         {days.map((date) => {
           const key = toDayKey(date);
           return (

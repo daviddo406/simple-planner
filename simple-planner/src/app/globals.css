@@ -40,11 +40,25 @@
   --color-ink-ghost: #8a8676;
 
   /*
-   * The accent is whichever slime the user picked (Phase 5). It is a fill-only
-   * mark — never a text color, never behind text — and every one of the twelve
-   * clears 3:1 on paper. Default: teal.
+   * The accent is whichever slime the user picked (Phase 5): its *shade*, and
+   * only ever the shade. It marks the rule under the week header and the
+   * holiday square, and it tints the headings and day labels — the month name,
+   * the weekday letters, the week range, the per-day weekday.
+   *
+   * Because it lands on text, every one of the twelve is held to 4.5:1 against
+   * paper rather than the 3:1 a non-text mark would need, and `slimes.test.ts`
+   * recomputes that for all twelve. A slime's base and highlight are still
+   * fill-only and never leave the sprite. Default: teal.
    */
   --color-accent: #1e8a80;
+
+  /*
+   * The backdrop's one tone: the body of a pixel cloud, a half-step lighter
+   * than paper. It is not part of the ink ramp and never carries text — it
+   * exists to be *almost* invisible, because decoration behind the week page
+   * with any real contrast reads as a surface rather than as sky.
+   */
+  --color-cloud: #f8f4ea;
 
   /* Rule 1: delete the radius scale outright, so `rounded-md` is not a
    * utility that exists to be typed by accident. */

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { PixelButton } from "@/components/ui/PixelButton";
 import { PixelCheckbox } from "@/components/ui/PixelCheckbox";
 import { PixelFrame } from "@/components/ui/PixelFrame";
+import { PixelCloud } from "@/components/ui/PixelCloud";
 import { Slime } from "@/components/ui/Slime";
 import { SLIMES, SLIME_IDS } from "@/lib/slimes";
 
@@ -162,6 +163,23 @@ export default function SpecimenPage() {
                 />
               </div>
             ))}
+          </div>
+        </PixelFrame>
+      </Section>
+
+      <Section title="Backdrop">
+        <PixelFrame className="flex flex-col gap-4 p-4">
+          <span className="text-body-sm text-ink-soft">
+            One 24&#215;9 cloud, mirrored and rescaled rather than redrawn. Its
+            body is <code>--color-cloud</code>, a half-step lighter than paper:
+            on the page it sits behind everything, so any real contrast would
+            read as a surface instead of as sky.
+          </span>
+          <div className="flex flex-wrap items-end gap-8">
+            <PixelCloud scale={1} />
+            <PixelCloud scale={2} />
+            <PixelCloud scale={3} flipped />
+            <PixelCloud scale={4} />
           </div>
         </PixelFrame>
       </Section>
