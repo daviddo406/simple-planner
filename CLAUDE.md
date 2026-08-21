@@ -172,6 +172,36 @@ Vercel account.
   Postgres including Neon. `@neondatabase/serverless` speaks only to Neon over HTTP/WebSocket,
   and drizzle-kit will silently prefer it and then hang against a plain server if `pg` is not
   installed.
+- **`drizzle.config.ts` loads `.env.local` itself.** `next dev` and `next build` do this on their
+  own; drizzle-kit does not, so without it `npm run db:migrate` reports "no database connection
+  string" on a machine that plainly has one. It uses Node's built-in `process.loadEnvFile`, which
+  does *not* overwrite a value that is already set — so the first file loaded wins, `.env.local`
+  is loaded before `.env` to outrank it, and an inline `DATABASE_URL=… npm run db:migrate` still
+  outranks both.
+
+## Deploying to Vercel
+
+- **Root Directory must be `simple-planner`.** The repo root holds the iOS app and the docs; the
+  Next app is one level down, and the build fails without this.
+- **No Vercel CLI is needed.** Provision Postgres from the project's Storage tab, then copy
+  `DATABASE_URL` from Settings → Environment Variables into a local `.env.local`. If a CLI is
+  wanted it runs under `npx vercel` with no install.
+- `DB_DRIVER` need not be set in production — it defaults to `neon`.
+- Use the **pooled** connection string for the app and the direct/`_UNPOOLED` one for migrations.
+  Serverless functions are the classic way to exhaust a Postgres connection limit.
+- **Migrations run as a deploy step or by hand, never at request time** — on a serverless platform
+  a migration inside a request handler runs once per cold start, concurrently, against the same
+  schema. There is deliberately no `vercel-build` script yet: adding one makes every deploy write
+  to whatever database that environment points at, including previews. That call is David's.
+- **Preview deployments must not share the production database** — a Neon branch per preview is
+  the least-effort version, and the thing most likely to be skipped and then regretted.
+- **The app has no auth by decision**, so a public deployment is world-readable *and*
+  world-writable — Server Actions are public endpoints. The fix is Vercel Deployment Protection, a
+  project setting, not Neon Auth: Neon Auth manages users but does not gate routes, and it adds a
+  Neon-specific `neon_auth` schema that cuts against the portable-Postgres rule.
+- **Do not set a custom environment-variable prefix** on the Marketplace integration. `src/db/env.ts`
+  looks for a fixed list of names and a prefix renames all of them; it is only worth it with two
+  databases in one project, and it is a one-line change to that file if ever needed.
 - **Nothing is ever written to disk.** Vercel Functions have no persistent filesystem; files go
   through the `BlobStore` interface in `src/storage/blob.ts`, which deliberately has no callers.
 - **Migrations never run at request time** on the Neon path. `src/db/index.ts` does bootstrap the
