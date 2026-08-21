@@ -27,6 +27,19 @@ export async function toggleTask(id: number): Promise<void> {
   revalidatePath("/");
 }
 
+/**
+ * The title comes from the client as a plain string rather than a `FormData`,
+ * because the row's edit form is submitted by React rather than posted; the
+ * empty case is the same tolerated no-op as `addTask`.
+ */
+export async function renameTask(id: number, title: string): Promise<void> {
+  if (!title.trim()) {
+    return;
+  }
+  await db.renameTask(id, title);
+  revalidatePath("/");
+}
+
 export async function deleteTask(id: number): Promise<void> {
   await db.deleteTask(id);
   revalidatePath("/");

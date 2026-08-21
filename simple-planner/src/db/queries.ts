@@ -73,6 +73,20 @@ export async function toggleTask(id: number): Promise<void> {
     .where(eq(tasks.id, id));
 }
 
+/**
+ * Renames in a single statement, like `toggleTask`. The title is trimmed and
+ * validated here rather than trusted, because it arrives from the client; a
+ * missing id updates nothing, which is a no-op rather than an error.
+ */
+export async function renameTask(id: number, title: string): Promise<void> {
+  const trimmed = title.trim();
+  if (!trimmed) {
+    throw new Error("A task needs a title.");
+  }
+  const db = await getDb();
+  await db.update(tasks).set({ title: trimmed }).where(eq(tasks.id, id));
+}
+
 export async function deleteTask(id: number): Promise<void> {
   const db = await getDb();
   await db.delete(tasks).where(eq(tasks.id, id));

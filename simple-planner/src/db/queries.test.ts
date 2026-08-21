@@ -5,7 +5,15 @@
 // SQLite stand-in could never guarantee.
 import { beforeEach, describe, expect, test } from "vitest";
 import { resetDb } from "./index";
-import { addTask, deleteTask, getSlime, setSlime, tasksForWeek, toggleTask } from "./queries";
+import {
+  addTask,
+  deleteTask,
+  getSlime,
+  renameTask,
+  setSlime,
+  tasksForWeek,
+  toggleTask,
+} from "./queries";
 
 const MONDAY = "2026-06-29";
 const WEEK = [
@@ -113,6 +121,54 @@ describe("toggleTask", () => {
 
   test("is a no-op on a missing id rather than a throw", async () => {
     await expect(toggleTask(9999)).resolves.toBeUndefined();
+  });
+});
+
+describe("renameTask", () => {
+  test("replaces the title", async () => {
+    const task = await addTask("2026-07-01", "buy milk");
+
+    await renameTask(task.id, "buy oat milk");
+    expect((await tasksForWeek(MONDAY))["2026-07-01"].map((t) => t.title)).toEqual(["buy oat milk"]);
+  });
+
+  test("trims the new title", async () => {
+    const task = await addTask("2026-07-01", "buy milk");
+
+    await renameTask(task.id, "   buy oat milk   ");
+    expect((await tasksForWeek(MONDAY))["2026-07-01"][0].title).toBe("buy oat milk");
+  });
+
+  test("rejects an empty title and leaves the old one", async () => {
+    const task = await addTask("2026-07-01", "buy milk");
+
+    await expect(renameTask(task.id, "   ")).rejects.toThrow();
+    expect((await tasksForWeek(MONDAY))["2026-07-01"][0].title).toBe("buy milk");
+  });
+
+  test("leaves completion and day alone", async () => {
+    const task = await addTask("2026-07-01", "buy milk");
+    await toggleTask(task.id);
+
+    await renameTask(task.id, "buy oat milk");
+    const row = (await tasksForWeek(MONDAY))["2026-07-01"][0];
+    expect(row.isCompleted).toBe(true);
+    expect(row.dayKey).toBe("2026-07-01");
+  });
+
+  test("leaves other tasks alone", async () => {
+    const target = await addTask("2026-07-01", "buy milk");
+    await addTask("2026-07-01", "bystander");
+
+    await renameTask(target.id, "buy oat milk");
+    expect((await tasksForWeek(MONDAY))["2026-07-01"].map((t) => t.title)).toEqual([
+      "buy oat milk",
+      "bystander",
+    ]);
+  });
+
+  test("is a no-op on a missing id", async () => {
+    await expect(renameTask(9999, "nobody")).resolves.toBeUndefined();
   });
 });
 
