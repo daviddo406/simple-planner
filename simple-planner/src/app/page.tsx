@@ -3,8 +3,8 @@ import { MiniCalendar } from "@/components/MiniCalendar";
 import { TodayMarker } from "@/components/TodayMarker";
 import { WeekPage } from "@/components/WeekPage";
 import { SlimePicker } from "@/components/SlimePicker";
-import { getSlime, tasksForWeek } from "@/db/queries";
-import { SLIMES } from "@/lib/slimes";
+import { ThemePicker } from "@/components/ThemePicker";
+import { getSlime, getTheme, tasksForWeek } from "@/db/queries";
 import { dayKey, isDayKey, parseDayKey, shiftMonth, startOfWeekMonday } from "@/lib/calendar";
 import { holidaysByDayKey, holidaysForYear } from "@/lib/holidays";
 import { WeekRedirect } from "./week-redirect";
@@ -39,7 +39,7 @@ export default async function Page({ searchParams }: PageProps<"/">) {
       ? dayKey(shiftMonth(parseDayKey(requestedMonth), 0))
       : dayKey(shiftMonth(parseDayKey(weekKey), 0));
 
-  const [tasks, slime] = await Promise.all([tasksForWeek(weekKey), getSlime()]);
+  const [tasks, slime, theme] = await Promise.all([tasksForWeek(weekKey), getSlime(), getTheme()]);
   const holidays = holidaysByDayKey(weekKey);
   // The grid can show a month either side of the selected week, so the mini
   // calendar is given the whole visible year's holidays rather than the week's.
@@ -51,15 +51,15 @@ export default async function Page({ searchParams }: PageProps<"/">) {
     <>
       <Backdrop />
       <main
-          // The chosen slime's shade *is* the accent. Publishing it as the token
-        // here means the week rule and the holiday square pick it up with no
-        // component knowing a slime exists.
-        style={{ "--color-accent": SLIMES[slime].shade } as React.CSSProperties}
+        // The accent the week rule and the holiday square paint with is
+        // published on <html> by the root layout, so nothing here has to know
+        // that a slime is what decides it.
         className="mx-auto flex max-w-320 flex-col items-start gap-8 p-6 lg:flex-row"
       >
         <aside className="flex shrink-0 flex-col gap-4">
           <MiniCalendar weekKey={weekKey} monthKey={monthKey} holidayKeys={monthHolidayKeys} />
           <SlimePicker selected={slime} />
+          <ThemePicker selected={theme} />
           <TodayMarker />
         </aside>
         <div className="w-full grow">

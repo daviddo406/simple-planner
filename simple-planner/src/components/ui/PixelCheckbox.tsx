@@ -9,10 +9,7 @@ import type { ComponentPropsWithoutRef } from "react";
  * The check is a CSS-drawn glyph on a 4px grid rather than a font glyph or an
  * SVG tick, so it cannot pick up antialiasing from either.
  */
-export function PixelCheckbox({
-  className = "",
-  ...rest
-}: ComponentPropsWithoutRef<"input">) {
+export function PixelCheckbox({ className = "", ...rest }: ComponentPropsWithoutRef<"input">) {
   return (
     <input
       type="checkbox"

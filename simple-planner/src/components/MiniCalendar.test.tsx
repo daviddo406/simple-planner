@@ -16,7 +16,9 @@ describe("MiniCalendar", () => {
     renderCalendar();
     expect(screen.getByText("JUL 2026")).toBeInTheDocument();
     expect(
-      within(screen.getByRole("table")).getAllByRole("columnheader").map((h) => h.textContent),
+      within(screen.getByRole("table"))
+        .getAllByRole("columnheader")
+        .map((h) => h.textContent),
     ).toEqual(["M", "T", "W", "T", "F", "S", "S"]);
   });
 

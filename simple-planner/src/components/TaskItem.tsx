@@ -44,12 +44,7 @@ export function TaskItem({ task }: { task: Task }) {
 
   return (
     <li className="flex items-start gap-3">
-      <PixelCheckbox
-        checked={completed}
-        onChange={onToggle}
-        aria-label={title}
-        className="mt-1"
-      />
+      <PixelCheckbox checked={completed} onChange={onToggle} aria-label={title} className="mt-1" />
       {/* The grow spacer is separate from the title so the strike stops where
           the text does rather than running on to the delete button, and so the
           delete button does not move when the row swaps into an input. */}

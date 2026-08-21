@@ -12,8 +12,10 @@
  *                               multiples of their design size.
  *   6. Raster stays raster.     image-rendering: pixelated everywhere.
  *
- * Swapping the palette later — for the "night paper" ramp that is tokenized
- * here but deliberately not shipped — is an edit to this one block.
+ * The palette comes in two ramps — day paper and night paper — and swapping
+ * between them is an edit to this one file: every component paints with
+ * `--color-*`, so redefining those six variables re-themes the app without a
+ * single component knowing a second palette exists.
  */
 @theme {
   /*
@@ -46,11 +48,17 @@
    * the weekday letters, the week range, the per-day weekday.
    *
    * Because it lands on text, every one of the twelve is held to 4.5:1 against
-   * paper rather than the 3:1 a non-text mark would need, and `slimes.test.ts`
-   * recomputes that for all twelve. A slime's base and highlight are still
-   * fill-only and never leave the sprite. Default: teal.
+   * its ground rather than the 3:1 a non-text mark would need, and
+   * `slimes.test.ts` recomputes that for all twelve on both grounds.
+   *
+   * It takes two values, because it is the one token the server cannot decide:
+   * on "system" the stored preference says nothing about which ramp the
+   * browser will pick. So `page.tsx` publishes the chosen slime's day and
+   * night accents as `--accent-day` and `--accent-night`, and the ramp blocks
+   * below choose between them the same way they choose everything else.
+   * Default: teal.
    */
-  --color-accent: #1e8a80;
+  --color-accent: var(--accent-day);
 
   /*
    * The backdrop's one tone: the body of a pixel cloud, a half-step lighter
@@ -102,6 +110,86 @@
 }
 
 /*
+ * The night ramp: the same five roles, measured to the same budget.
+ *
+ * It is declared once, here, as a flat set of `--night-*` values, and the two
+ * blocks below only *remap* `--color-*` onto it. Writing the hexes twice — once
+ * for the media query, once for the attribute — is how a dark theme ends up
+ * subtly different depending on which route switched it on.
+ *
+ *   ink        15.51:1   ink-faint   5.37:1
+ *   ink-soft    9.10:1   ink-ghost   3.37:1
+ *
+ * Note that `--shadow-hard` is defined as an offset of `var(--color-ink)`, so
+ * the theme's one depth cue inverts along with the ramp for free: a light
+ * offset on a dark ground, still hard-edged, still 4px.
+ */
+:root {
+  --night-paper: #14141c;
+  --night-ink: #f0ece0;
+  --night-ink-soft: #bbb7a6;
+  --night-ink-faint: #8f8b7c;
+  --night-ink-ghost: #6d6a5c;
+  --night-cloud: #1e1e28;
+
+  /*
+   * Teal's two accents, standing in until `page.tsx` publishes the chosen
+   * slime's. Routes that render without the week page's inline style — the
+   * specimen page, and anything added later — would otherwise resolve
+   * `--color-accent` to nothing and paint it transparent.
+   */
+  --accent-day: #1e6b62;
+  --accent-night: #4fb3a6;
+}
+
+/*
+ * Two ways in, one ramp.
+ *
+ * The media query is the default: a dark OS gets night paper with nothing
+ * stored anywhere. `html:not([data-theme="light"])` is what lets the stored
+ * preference beat it — an explicit Light choice on a dark machine has to win,
+ * and a media query with no escape hatch is exactly the bug that makes a theme
+ * toggle look broken to the one user who needs it.
+ *
+ * The attribute is server-rendered into `<html>` from the stored setting, so
+ * the correct ramp is in the first paint. There is no blocking inline script
+ * and no flash of the wrong theme.
+ */
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) {
+    --color-paper: var(--night-paper);
+    --color-ink: var(--night-ink);
+    --color-ink-soft: var(--night-ink-soft);
+    --color-ink-faint: var(--night-ink-faint);
+    --color-ink-ghost: var(--night-ink-ghost);
+    --color-cloud: var(--night-cloud);
+    --color-accent: var(--accent-night);
+
+    /* Scenery that belongs to the night ramp only — the stars. It is always
+     * in the DOM and switched here rather than rendered conditionally,
+     * because on "system" the server cannot know which ramp the browser will
+     * use, and deciding it on the client would need a mount to happen first. */
+    .night-only {
+      display: block;
+    }
+  }
+}
+
+html[data-theme="dark"] {
+  --color-paper: var(--night-paper);
+  --color-ink: var(--night-ink);
+  --color-ink-soft: var(--night-ink-soft);
+  --color-ink-faint: var(--night-ink-faint);
+  --color-ink-ghost: var(--night-ink-ghost);
+  --color-cloud: var(--night-cloud);
+  --color-accent: var(--accent-night);
+
+  .night-only {
+    display: block;
+  }
+}
+
+/*
  * A completed task's strikethrough, drawn as a hard 2px rule rather than with
  * `text-decoration: line-through`, whose thickness is font-derived and lands
  * off the grid. Painting it as a repeating background instead of a single
@@ -142,6 +230,13 @@
      * pixel theme ends up looking soft. */
     -webkit-font-smoothing: none;
     font-smooth: never;
+  }
+
+  /* Night-only scenery is hidden on day paper; the two ramp blocks above turn
+   * it back on. Declared here rather than as a Tailwind `hidden` class so that
+   * one selector owns the whole switch. */
+  .night-only {
+    display: none;
   }
 
   /* Rule 6: nothing gets interpolated back into softness. */

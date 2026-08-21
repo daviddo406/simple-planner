@@ -49,5 +49,16 @@ export async function setSlime(id: string): Promise<void> {
   // Validated against the id list in `db.setSlime` before it is written; this
   // value arrives from the client.
   await db.setSlime(id);
-  revalidatePath("/");
+  // "layout", like the theme: the accent it decides is published on <html>.
+  revalidatePath("/", "layout");
+}
+
+export async function setTheme(choice: string): Promise<void> {
+  // Validated against the choice list in `db.setTheme` before it is written;
+  // this value arrives from the client.
+  await db.setTheme(choice);
+  // "layout" rather than the default "page": the theme is rendered as an
+  // attribute on <html> in the root layout, and a page-only revalidation
+  // would leave a client-side navigation carrying the previous ramp.
+  revalidatePath("/", "layout");
 }

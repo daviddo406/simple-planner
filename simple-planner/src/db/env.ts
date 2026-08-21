@@ -44,7 +44,9 @@ export function resolveDriver(env: Env): Driver {
     return "neon";
   }
   if (!(DRIVERS as readonly string[]).includes(requested)) {
-    throw new Error(`Unknown DB_DRIVER ${JSON.stringify(requested)}. Expected one of ${DRIVERS.join(", ")}.`);
+    throw new Error(
+      `Unknown DB_DRIVER ${JSON.stringify(requested)}. Expected one of ${DRIVERS.join(", ")}.`,
+    );
   }
   return requested as Driver;
 }
