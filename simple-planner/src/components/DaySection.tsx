@@ -14,16 +14,23 @@ export function DaySection({
   dayKey,
   tasks,
   holidays,
+  className,
 }: {
   date: Date;
   dayKey: string;
   tasks: Task[];
   holidays: string[];
+  /** Grid placement from the week page; the section owns nothing else here. */
+  className?: string;
 }) {
   const label = formatDayLabel(date);
 
   return (
-    <PixelFrame as="section" aria-label={label} className="flex flex-col gap-3 p-4">
+    <PixelFrame
+      as="section"
+      aria-label={label}
+      className={`flex flex-col gap-3 p-4${className ? ` ${className}` : ""}`}
+    >
       <div className="flex items-baseline gap-3 border-b-2 border-ink-faint pb-2">
         <span className="font-display text-display-md">{date.getDate()}</span>
         <span className="font-display text-display-sm text-accent">
