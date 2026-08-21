@@ -1,26 +1,174 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * The whole theme. Six rules define it, and every one of them is a thing the
+ * browser does by default that is switched off here:
+ *
+ *   1. Nothing is round.        border-radius: 0, no exceptions.
+ *   2. Nothing is blurred.      Depth is a hard offset shadow, never a blur.
+ *   3. Everything is on grid.   One 4px unit; no fractional sizes.
+ *   4. Borders are 2px.         A 1px border half-blurs on a 1.5x display.
+ *   5. Type is pixel type.      Bitmap faces, font smoothing off, at integer
+ *                               multiples of their design size.
+ *   6. Raster stays raster.     image-rendering: pixelated everywhere.
+ *
+ * Swapping the palette later — for the "night paper" ramp that is tokenized
+ * here but deliberately not shipped — is an edit to this one block.
+ */
+@theme {
+  /*
+   * Tailwind v4 derives its entire numeric spacing scale from this one
+   * variable, so `p-2` is 8px, `gap-3` is 12px, and every spacing utility in
+   * the codebase lands on the grid automatically. This single line is what
+   * makes rule 3 enforceable rather than aspirational.
+   */
+  --spacing: 4px;
+
+  /*
+   * Paper ground, four ink tones. Each was checked against its background for
+   * 4.5:1 (body text) or 3:1 (borders and large display type) before it went
+   * in, because a mid-tone pixel palette is exactly the kind that looks right
+   * next to a chunky border and fails WCAG on its own.
+   *
+   *   ink        15.48:1   ink-faint   4.84:1
+   *   ink-soft    8.59:1   ink-ghost   3.12:1
+   */
+  --color-paper: #f2ede0;
+  --color-ink: #171613;
+  --color-ink-soft: #454239;
+  --color-ink-faint: #6b6759;
+  --color-ink-ghost: #8a8676;
+
+  /*
+   * The accent is whichever slime the user picked (Phase 5): its *shade*, and
+   * only ever the shade. It marks the rule under the week header and the
+   * holiday square, and it tints the headings and day labels — the month name,
+   * the weekday letters, the week range, the per-day weekday.
+   *
+   * Because it lands on text, every one of the twelve is held to 4.5:1 against
+   * paper rather than the 3:1 a non-text mark would need, and `slimes.test.ts`
+   * recomputes that for all twelve. A slime's base and highlight are still
+   * fill-only and never leave the sprite. Default: teal.
+   */
+  --color-accent: #1e8a80;
+
+  /*
+   * The backdrop's one tone: the body of a pixel cloud, a half-step lighter
+   * than paper. It is not part of the ink ramp and never carries text — it
+   * exists to be *almost* invisible, because decoration behind the week page
+   * with any real contrast reads as a surface rather than as sky.
+   */
+  --color-cloud: #f8f4ea;
+
+  /* Rule 1: delete the radius scale outright, so `rounded-md` is not a
+   * utility that exists to be typed by accident. */
+  --radius-*: initial;
+
+  /* Rule 2: delete every blurred shadow and every filter primitive, then
+   * define the only depth this theme has. */
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --blur-*: initial;
+  --shadow-hard: 4px 4px 0 var(--color-ink);
+  --shadow-hard-sm: 2px 2px 0 var(--color-ink);
+
+  /* Rule 5: two vendored bitmap faces and nothing else. */
+  --font-*: initial;
+  --font-display: var(--font-silkscreen), monospace;
+  --font-body: var(--font-departure-mono), monospace;
+
+  /*
+   * Rule 5 again, and rule 3: the default Tailwind type scale is in rem and
+   * lands off the pixel grid, so it is deleted and replaced by a ladder of
+   * integer multiples of each face's design size.
+   *
+   *   Silkscreen is designed at 8px  -> 16 / 24 / 32
+   *   Departure Mono is designed at 11px, per the foundry's own README
+   *     ("for pixel-perfect results, set the font size to increments of 11px")
+   *     -> 22, which is the first multiple at or above the 16px body floor
+   */
+  --text-*: initial;
+  --text-display-sm: 16px;
+  --text-display-sm--line-height: 24px;
+  --text-display-md: 24px;
+  --text-display-md--line-height: 32px;
+  --text-display-lg: 32px;
+  --text-display-lg--line-height: 40px;
+  --text-body: 22px;
+  --text-body--line-height: 32px;
+  --text-body-sm: 11px;
+  --text-body-sm--line-height: 16px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/*
+ * A completed task's strikethrough, drawn as a hard 2px rule rather than with
+ * `text-decoration: line-through`, whose thickness is font-derived and lands
+ * off the grid. Painting it as a repeating background instead of a single
+ * pseudo-element means it strikes every line of a title that wraps, not just
+ * the first, and the 32px tile is exactly the body line-height.
+ */
+@utility strike-pixel {
+  background-image: linear-gradient(
+    to bottom,
+    transparent 16px,
+    currentColor 16px,
+    currentColor 18px,
+    transparent 18px
+  );
+  background-repeat: repeat-y;
+  background-size: 100% 32px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  /*
+   * Rule 1, belt and braces. Clearing the scale above stops anyone typing a
+   * rounded utility; this stops the browser rounding anything on its own,
+   * which it does for form controls on every platform.
+   */
+  *,
+  *::before,
+  *::after {
+    border-radius: 0;
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  html {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    font-size: 22px;
+    line-height: 32px;
+    /* Rule 5: antialiasing a bitmap face is the single most common way a
+     * pixel theme ends up looking soft. */
+    -webkit-font-smoothing: none;
+    font-smooth: never;
+  }
+
+  /* Rule 6: nothing gets interpolated back into softness. */
+  img,
+  svg,
+  canvas,
+  video {
+    image-rendering: pixelated;
+  }
+
+  /*
+   * The focus ring is load-bearing. On a theme with no hover elevation it is
+   * the only affordance a keyboard user gets, so it is square, 2px, and never
+   * removed.
+   */
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+
+  /* Motion is stepped or absent. Under reduced motion it is absent. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
 }

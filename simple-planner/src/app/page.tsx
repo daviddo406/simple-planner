@@ -1,69 +1,71 @@
-import Image from "next/image";
+import { Backdrop } from "@/components/Backdrop";
+import { MiniCalendar } from "@/components/MiniCalendar";
+import { TodayMarker } from "@/components/TodayMarker";
+import { WeekPage } from "@/components/WeekPage";
+import { SlimePicker } from "@/components/SlimePicker";
+import { getSlime, tasksForWeek } from "@/db/queries";
+import { SLIMES } from "@/lib/slimes";
+import { dayKey, isDayKey, parseDayKey, shiftMonth, startOfWeekMonday } from "@/lib/calendar";
+import { holidaysByDayKey, holidaysForYear } from "@/lib/holidays";
+import { WeekRedirect } from "./week-redirect";
 
-export default function Home() {
+function firstValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+/**
+ * The selected week lives in the URL, not in React state. The iOS app's "one
+ * `selectedDate` owned by the root view" becomes one `?week=` param owned by
+ * the router: the mini calendar and the week page both derive from it, so they
+ * cannot disagree — the same invariant, with the better property that the
+ * state is shareable, bookmarkable, and survives a reload.
+ */
+export default async function Page({ searchParams }: PageProps<"/">) {
+  const params = await searchParams;
+  const requestedWeek = firstValue(params.week);
+
+  if (!requestedWeek || !isDayKey(requestedWeek)) {
+    return <WeekRedirect />;
+  }
+
+  // Normalize rather than trust: `?week=` is user input and may name any day.
+  const weekKey = dayKey(startOfWeekMonday(parseDayKey(requestedWeek)));
+
+  // The visible month is its own param, because paging the mini calendar to
+  // another month must not move the week page.
+  const requestedMonth = firstValue(params.month);
+  const monthKey =
+    requestedMonth && isDayKey(requestedMonth)
+      ? dayKey(shiftMonth(parseDayKey(requestedMonth), 0))
+      : dayKey(shiftMonth(parseDayKey(weekKey), 0));
+
+  const [tasks, slime] = await Promise.all([tasksForWeek(weekKey), getSlime()]);
+  const holidays = holidaysByDayKey(weekKey);
+  // The grid can show a month either side of the selected week, so the mini
+  // calendar is given the whole visible year's holidays rather than the week's.
+  const monthHolidayKeys = holidaysForYear(parseDayKey(monthKey).getFullYear()).map(
+    (holiday) => holiday.dayKey,
+  );
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+    <>
+      <Backdrop />
+      <main
+          // The chosen slime's shade *is* the accent. Publishing it as the token
+        // here means the week rule and the holiday square pick it up with no
+        // component knowing a slime exists.
+        style={{ "--color-accent": SLIMES[slime].shade } as React.CSSProperties}
+        className="mx-auto flex max-w-320 flex-col items-start gap-8 p-6 lg:flex-row"
+      >
+        <aside className="flex shrink-0 flex-col gap-4">
+          <MiniCalendar weekKey={weekKey} monthKey={monthKey} holidayKeys={monthHolidayKeys} />
+          <SlimePicker selected={slime} />
+          <TodayMarker />
+        </aside>
+        <div className="w-full grow">
+          <WeekPage weekKey={weekKey} tasks={tasks} holidays={holidays} slime={slime} />
         </div>
       </main>
-    </div>
+    </>
   );
 }
