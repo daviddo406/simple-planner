@@ -3,6 +3,7 @@ import { TodayMarker } from "@/components/TodayMarker";
 import { WeekPage } from "@/components/WeekPage";
 import { tasksForWeek } from "@/db/queries";
 import { dayKey, isDayKey, parseDayKey, shiftMonth, startOfWeekMonday } from "@/lib/calendar";
+import { holidaysByDayKey, holidaysForYear } from "@/lib/holidays";
 import { WeekRedirect } from "./week-redirect";
 
 function firstValue(value: string | string[] | undefined): string | undefined {
@@ -36,15 +37,21 @@ export default async function Page({ searchParams }: PageProps<"/">) {
       : dayKey(shiftMonth(parseDayKey(weekKey), 0));
 
   const tasks = await tasksForWeek(weekKey);
+  const holidays = holidaysByDayKey(weekKey);
+  // The grid can show a month either side of the selected week, so the mini
+  // calendar is given the whole visible year's holidays rather than the week's.
+  const monthHolidayKeys = holidaysForYear(parseDayKey(monthKey).getFullYear()).map(
+    (holiday) => holiday.dayKey,
+  );
 
   return (
     <main className="mx-auto flex max-w-280 flex-col items-start gap-8 p-6 lg:flex-row">
       <aside className="flex shrink-0 flex-col gap-4">
-        <MiniCalendar weekKey={weekKey} monthKey={monthKey} holidayKeys={[]} />
+        <MiniCalendar weekKey={weekKey} monthKey={monthKey} holidayKeys={monthHolidayKeys} />
         <TodayMarker />
       </aside>
       <div className="w-full grow">
-        <WeekPage weekKey={weekKey} tasks={tasks} holidays={{}} />
+        <WeekPage weekKey={weekKey} tasks={tasks} holidays={holidays} />
       </div>
     </main>
   );
