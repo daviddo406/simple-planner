@@ -1,6 +1,6 @@
 # Weekly Planner: Next.js Implementation Plan
 
-**Status:** Not started — plan only
+**Status:** Implemented — all six phases, on branch `feat/nextjs-weekly-planner`
 **Date:** 2026-08-19 (pixel theme added 2026-08-20)
 **Relationship to `weekly-planner-redesign.md`:** that document is the iOS/SwiftUI plan for the
 same product. This is a **greenfield Next.js application** built to the same design, not a port
