@@ -41,3 +41,27 @@ export const settings = pgTable("settings", {
 });
 
 export type SettingRow = typeof settings.$inferSelect;
+
+/**
+ * The week's own list, beside the seven days rather than inside one of them.
+ *
+ * Its own table rather than a `tasks` row dated Monday: `tasksForWeek` selects
+ * on the seven day keys, so a Monday-dated todo would render inside the Monday
+ * section of the week page. Same column shapes as `tasks`, because the rows
+ * behave the same way — checkable, renameable, deletable.
+ */
+export const weekTodos = pgTable(
+  "week_todos",
+  {
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    title: text().notNull(),
+    // The Monday of the week the list belongs to, normalized on write, so
+    // every day of a week names the one list rather than seven.
+    weekKey: text("week_key").notNull(),
+    isCompleted: boolean("is_completed").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("week_todos_week_key_idx").on(table.weekKey)],
+);
+
+export type WeekTodoRow = typeof weekTodos.$inferSelect;
