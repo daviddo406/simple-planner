@@ -25,3 +25,19 @@ export const tasks = pgTable(
 );
 
 export type TaskRow = typeof tasks.$inferSelect;
+
+/**
+ * One key/value row per preference. A generic table rather than a `slimeColor`
+ * column somewhere, because it absorbs the next preference without a schema
+ * change and there is no row to attach one to — there is no user table, by
+ * decision.
+ *
+ * This ships its own migration. Phase 2's is already applied to the deployed
+ * database and is never edited in place.
+ */
+export const settings = pgTable("settings", {
+  key: text().primaryKey(),
+  value: text().notNull(),
+});
+
+export type SettingRow = typeof settings.$inferSelect;

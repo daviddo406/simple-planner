@@ -22,6 +22,7 @@ function renderWeek(tasks: Record<string, ReturnType<typeof makeTask>[]> = {}) {
       weekKey={MONDAY}
       tasks={Object.fromEntries(week.map((key) => [key, tasks[key] ?? []]))}
       holidays={{}}
+      slime="teal"
     />,
   );
 }

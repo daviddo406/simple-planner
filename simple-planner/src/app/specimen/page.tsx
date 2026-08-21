@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { PixelButton } from "@/components/ui/PixelButton";
 import { PixelCheckbox } from "@/components/ui/PixelCheckbox";
 import { PixelFrame } from "@/components/ui/PixelFrame";
+import { Slime } from "@/components/ui/Slime";
+import { SLIMES, SLIME_IDS } from "@/lib/slimes";
 
 /**
  * Dev-only. Renders every token, both faces at every step of the ladder, and
@@ -137,6 +139,30 @@ export default function SpecimenPage() {
             placeholder="type a task"
             className="w-full border-2 border-ink bg-paper px-3 py-2 placeholder:text-ink-ghost"
           />
+        </PixelFrame>
+      </Section>
+
+      <Section title="Slimes">
+        <PixelFrame className="flex flex-col gap-4 p-4">
+          <span className="text-body-sm text-ink-soft">
+            Twelve variants of one 16&#215;14 shape, at 1&#215; (picker) and
+            2&#215; (header). Never 1.5&#215;.
+          </span>
+          <div className="flex flex-wrap gap-4">
+            {SLIME_IDS.map((id) => (
+              <div key={id} className="flex flex-col items-center gap-2">
+                <Slime id={id} scale={2} />
+                <Slime id={id} scale={1} />
+                <span className="text-body-sm text-ink-soft">{id}</span>
+                <span
+                  aria-hidden
+                  title={`${id} shade — the accent when this slime is chosen`}
+                  className="h-2 w-8"
+                  style={{ background: SLIMES[id].shade }}
+                />
+              </div>
+            ))}
+          </div>
         </PixelFrame>
       </Section>
 

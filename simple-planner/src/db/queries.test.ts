@@ -5,7 +5,7 @@
 // SQLite stand-in could never guarantee.
 import { beforeEach, describe, expect, test } from "vitest";
 import { resetDb } from "./index";
-import { addTask, deleteTask, tasksForWeek, toggleTask } from "./queries";
+import { addTask, deleteTask, getSlime, setSlime, tasksForWeek, toggleTask } from "./queries";
 
 const MONDAY = "2026-06-29";
 const WEEK = [
@@ -133,5 +133,29 @@ describe("deleteTask", () => {
 
   test("is a no-op on a missing id", async () => {
     await expect(deleteTask(9999)).resolves.toBeUndefined();
+  });
+});
+
+describe("the slime preference", () => {
+  test("returns the default on a fresh database rather than null", () => {
+    // Never null, so no caller has to branch on "not chosen yet".
+    return expect(getSlime()).resolves.toBe("teal");
+  });
+
+  test("returns the stored value after it is set", async () => {
+    await setSlime("plum");
+    expect(await getSlime()).toBe("plum");
+  });
+
+  test("overwrites rather than accumulating rows", async () => {
+    await setSlime("plum");
+    await setSlime("moss");
+    expect(await getSlime()).toBe("moss");
+  });
+
+  test("rejects a bogus id and writes nothing", async () => {
+    await setSlime("plum");
+    await expect(setSlime("chartreuse")).rejects.toThrow();
+    expect(await getSlime()).toBe("plum");
   });
 });

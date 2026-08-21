@@ -31,3 +31,10 @@ export async function deleteTask(id: number): Promise<void> {
   await db.deleteTask(id);
   revalidatePath("/");
 }
+
+export async function setSlime(id: string): Promise<void> {
+  // Validated against the id list in `db.setSlime` before it is written; this
+  // value arrives from the client.
+  await db.setSlime(id);
+  revalidatePath("/");
+}

@@ -38,7 +38,16 @@ async function connect(): Promise<Database> {
     import("drizzle-orm/pglite"),
     import("drizzle-orm/pglite/migrator"),
   ]);
-  const client = new PGlite(process.env.PGLITE_DATA_DIR ?? "memory://");
+  const dataDir = process.env.PGLITE_DATA_DIR ?? "memory://";
+  if (!dataDir.startsWith("memory://")) {
+    // PGlite creates its own directory but not the parents above it, so a
+    // clean checkout running the E2E suite would fail on `.pglite/e2e` with an
+    // ENOENT that names mkdir rather than anything recognisable.
+    const { mkdirSync } = await import("node:fs");
+    const { dirname } = await import("node:path");
+    mkdirSync(dirname(dataDir), { recursive: true });
+  }
+  const client = new PGlite(dataDir);
   const db = drizzle(client, { schema });
   // Bootstrapping the schema here applies only to the in-process WASM backend,
   // which starts empty every time and has no deploy step to hang a migration

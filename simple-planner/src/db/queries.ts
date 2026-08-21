@@ -1,7 +1,8 @@
 import { asc, eq, inArray, sql } from "drizzle-orm";
 import { dayKey as toDayKey, daysOfWeek, parseDayKey } from "@/lib/calendar";
+import { DEFAULT_SLIME_ID, type SlimeId, isSlimeId } from "@/lib/slimes";
 import { getDb } from "./index";
-import { type TaskRow, tasks } from "./schema";
+import { settings, type TaskRow, tasks } from "./schema";
 
 /**
  * The only module that imports Drizzle. Server Actions and components call the
@@ -75,4 +76,34 @@ export async function toggleTask(id: number): Promise<void> {
 export async function deleteTask(id: number): Promise<void> {
   const db = await getDb();
   await db.delete(tasks).where(eq(tasks.id, id));
+}
+
+const SLIME_KEY = "slime";
+
+/**
+ * The chosen slime, or the default when unset — never `null`, so no caller has
+ * to branch on "not picked yet".
+ *
+ * The preference lives here rather than in `localStorage`, which is readable
+ * only after mount and would force the week header to be a Client Component,
+ * reintroducing exactly the hydration mismatch the URL-param design was built
+ * to avoid. Not a cookie either: a cookie is per-browser, so clearing site
+ * data would lose the slime while the tasks survived.
+ */
+export async function getSlime(): Promise<SlimeId> {
+  const db = await getDb();
+  const [row] = await db.select().from(settings).where(eq(settings.key, SLIME_KEY)).limit(1);
+  return isSlimeId(row?.value) ? row.value : DEFAULT_SLIME_ID;
+}
+
+/** Upserted in a single statement, so it needs no interactive transaction. */
+export async function setSlime(id: string): Promise<void> {
+  if (!isSlimeId(id)) {
+    throw new Error(`Not a slime: ${JSON.stringify(id)}`);
+  }
+  const db = await getDb();
+  await db
+    .insert(settings)
+    .values({ key: SLIME_KEY, value: id })
+    .onConflictDoUpdate({ target: settings.key, set: { value: id } });
 }
