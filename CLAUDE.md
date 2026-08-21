@@ -21,6 +21,52 @@ every platform mechanism is replaced.
 
 ---
 
+# Verifying without burning the context window
+
+Verification here is cheap or expensive depending on what you reach for, and the expensive
+options are not the thorough ones — they are mostly the same checks with a build in front of
+them. Rough cost order:
+
+    one vitest file  <  npm test  <  lint + tsc  <  playwright (rebuilds every run)  <  a screenshot  <  an Xcode build
+
+**Filter every command's output.** The signal in a test run is two lines and the default output
+is two hundred. `npm test 2>&1 | grep -E "Test Files|Tests  |×"` gives you the counts and the
+names of the failures; only then re-run the one failing file unfiltered. Same for `xcodebuild`,
+which is worse — pipe it through `grep -E "error:|warning:|\*\* (BUILD|TEST)"`.
+
+**Run one test file in the red/green loop; run the suite once before reporting.**
+`npx vitest run src/lib/calendar.test.ts` is about a second and tells you what a four-second
+full run tells you, twenty times over the course of a feature.
+
+**Lint and typecheck once, at the end.** `npm run lint` and `npx tsc --noEmit` after every edit
+find nothing that the same commands find at the end, and each one costs a round trip.
+
+**E2E is the expensive check and usually not the one you need.** `npx playwright test` runs
+`next build` first, every time — under a minute here, but it is the difference between checking
+something ten times and checking it once. Use `--grep "<describe name>"` while iterating. Do not
+add E2E tests unless asked: the invariants worth pinning in this repo — date math, contrast,
+markup, query behaviour — are all unit-testable, and E2E is for the seams that genuinely need a
+browser or a real Postgres. The existing suite is the contract; extend it on request.
+
+**Never run a formatter across the repo.** There is no Prettier config, so `npx prettier --write`
+falls back to 80 columns, reformats every file it can reach, and buries the actual change in
+twenty files of noise that then have to be reverted one by one. Match the surrounding style by
+hand — `npm run lint` is the check that matters. If you must format, pass
+`--print-width 100` and name only the files you changed.
+
+**Look at the app once, at the end.** Screenshots are worth taking for visual work and cost
+roughly a thousand tokens each to read. One at the finish, not one per iteration.
+
+**Grep before you read**, and read the range you need rather than the file. `sed -n '90,130p'`
+beats reading eight hundred lines to check one function.
+
+**Put `cd simple-planner &&` in the same command as the work.** The shell's working directory
+does not reliably survive between calls, and a command that silently runs from the repo root
+gives you a confusing failure rather than an obvious one — `npx playwright test` from the wrong
+directory scans `src/` and reports "no tests found".
+
+---
+
 # iOS app (`SimplePlanner/`)
 
 Project root for all Xcode/build commands: `SimplePlanner/`.
@@ -124,7 +170,7 @@ cd simple-planner
 npm run dev      # next dev
 npm run build    # next build
 npm run lint     # eslint
-npm test         # vitest run — 132 tests
+npm test         # vitest run — 207 tests
 npm run test:e2e # playwright — 17 tests against a production build on PGlite
 
 # The dev server needs a database. Three drivers, chosen with DB_DRIVER:
@@ -208,6 +254,49 @@ Vercel account.
   schema when the driver is `pglite`, because that in-process WASM backend starts empty every time
   and has no deploy step to hang a migration off.
 
+## Light and dark
+
+Two ramps, both declared in `src/app/globals.css` and nowhere else. The day ramp is the
+`--color-*` block inside `@theme`; the night ramp is a flat set of `--night-*` values, and two
+blocks *remap* `--color-*` onto it rather than restating the hexes — `@media
+(prefers-color-scheme: dark) html:not([data-theme="light"])`, and `html[data-theme="dark"]`.
+Because every component paints with `--color-*`, the swap needs no component to know a second
+palette exists, and `--shadow-hard` inverts with it for free.
+
+- **The choice is stored, not inferred.** `settings.theme` holds `system | light | dark` next to
+  the slime, and `layout.tsx` renders `data-theme` on `<html>` — omitted for `system`, which
+  leaves the media query in charge. Three values rather than two: an explicit Light on a dark
+  machine is a different statement from having chosen nothing, and only a third value tells them
+  apart on the next request. Server-rendered, so the ramp is right in the first paint — there is
+  deliberately no blocking inline script and no `localStorage`.
+- **`ThemePicker` writes `data-theme` itself on click.** The attribute is on `<html>`, above the
+  React tree, so `useOptimistic` cannot reach it; without that line the paper would lag the radio
+  by a server round trip. It uses `setAttribute` rather than assigning to `dataset` because the
+  React compiler lint forbids the assignment.
+- **`setTheme` and `setSlime` both `revalidatePath("/", "layout")`.** Page-scope revalidation
+  would leave a client navigation carrying the previous ramp or accent.
+- **The accent is published on `<html>`, not on `<main>`.** `--color-accent` is declared on
+  `:root`, so its `var(--accent-day)` is substituted using *that* element's custom properties.
+  Published lower, the pair is inherited by the subtree while the token reading it has already
+  resolved against the fallback — and the accent silently stops following the slime picker. Each
+  slime therefore carries a fourth tone, `night`, held to the same 4.5:1 as `shade` but against
+  night paper; only midnight needed a value that is not simply its `base`.
+- **Night-only scenery is switched in CSS, never rendered conditionally.** The stars are always in
+  the DOM inside `.night-only`; on "system" the server cannot know which ramp the browser will
+  use, and deciding it on the client would need a mount and reintroduce a flash. `PixelStar` is a
+  5x5 sprite through the same `pixelRuns`/`crispEdges` machinery as the cloud, with arms in a
+  slime night tone and a core in `--color-ink` so its brightest pixel moves with the ramp.
+- **`src/lib/contrast.ts` is the shared WCAG helper.** `theme.test.ts` parses both ramps straight
+  out of `globals.css` and holds each to its budget, which is why neither ramp's hexes are ever
+  written twice; `slimes.test.ts` reads `--night-paper` from the same file. That suite also
+  asserts the wiring — that every `--night-*` tone is remapped in *both* dark blocks, since
+  remapping one leaves the theme half-applied for either a dark OS or a stored Dark but not both.
+- **Dark mode is covered by unit tests only, by decision.** The E2E suite stays on day paper.
+  What that leaves unasserted is the browser end of the switch: that the media query and the
+  attribute actually resolve, that an explicit Light beats a dark OS, that `.night-only` really
+  hides the stars, and that rules 1–4 and axe hold on night paper. Worth knowing before changing
+  the ramp blocks — the unit tests read the CSS, they do not run it.
+
 ## The six theme rules
 
 Every one is something the browser does by default that `src/app/globals.css` switches off. The
@@ -224,7 +313,8 @@ exist to be typed by accident.
 6. **Raster stays raster** — `image-rendering: pixelated`; the slime SVG uses
    `shape-rendering="crispEdges"`, without which browsers antialias its rect edges.
 
-The E2E suite asserts rules 1–4 from computed styles on the real week page at DPR 1, 1.5, and 2.
+The E2E suite asserts rules 1–4 from computed styles on the real week page at DPR 1, 1.5, and 2,
+on day paper only.
 Pixel snapshots exist for the rest but are gated behind `PLAYWRIGHT_SNAPSHOTS=1` and meant to run
 only in the pinned Playwright container image, because font rendering differs between a host and
 CI — the command is in `playwright.config.ts`.
